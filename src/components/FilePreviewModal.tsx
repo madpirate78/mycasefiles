@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StoredFile } from '../services/indexedDBService';
-import PDFRenderer from './PDFRenderer';
+import PDFRenderer, { PDFNavigationControls } from './PDFRenderer';
 
 interface FilePreviewModalProps {
   file: StoredFile | null;
@@ -39,7 +39,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     section: 'other',
     description: ''
   });
-  const [showMagnifier, setShowMagnifier] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
 
   const sectionConfigs: SectionConfig[] = [
     {
@@ -272,14 +273,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
         <div className="modal-body">
           <div className="preview-section">
-            <h3>Document Preview</h3>
             <div className="pdf-preview">
               {file.type.includes('pdf') ? (
                 <PDFRenderer 
                   file={file.data}
                   onLoad={() => console.log('PDF loaded successfully')}
                   onError={(error) => console.error('PDF error:', error)}
-                  showMagnifier={showMagnifier}
+                  showNavigation={false}
+                  externalPageNumber={currentPage}
+                  onPageChange={(pageNumber, totalPages) => {
+                    setCurrentPage(pageNumber);
+                    setTotalPages(totalPages);
+                  }}
                 />
               ) : (
                 <div className="file-preview">
@@ -289,11 +294,23 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
                 </div>
               )}
             </div>
-
           </div>
 
           <div className="metadata-section">
             <h3>Document Information</h3>
+            
+            {file.type.includes('pdf') && totalPages > 1 && (
+              <div className="pdf-controls-section">
+                <PDFNavigationControls
+                  pageNumber={currentPage}
+                  numPages={totalPages}
+                  onFirstPage={() => setCurrentPage(1)}
+                  onPreviousPage={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  onNextPage={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  onLastPage={() => setCurrentPage(totalPages)}
+                />
+              </div>
+            )}
             
             <div className="form-group">
               <label>Document Section *</label>
@@ -354,29 +371,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
                 </p>
               )}
             </div>
-          </div>
-        </div>
 
-        <div className="modal-footer">
-          {/* Magnifier Toggle Button - Left side of footer for PDFs */}
-          {file.type.includes('pdf') && (
-            <button 
-              onClick={() => setShowMagnifier(!showMagnifier)}
-              className={`magnifier-toggle-btn ${!showMagnifier ? 'active' : ''}`}
-              title={showMagnifier ? 'Hide magnifier' : 'Show magnifier'}
-            >
-              <span className="magnifier-icon">🔍</span>
-              <span className="magnifier-text">
-                {showMagnifier ? 'Hide Magnifier' : 'Show Magnifier'}
-              </span>
-            </button>
-          )}
-          
-          <div className="footer-actions">
-            <button className="btn secondary" onClick={onClose}>Cancel</button>
-            <button className="btn primary" onClick={handleSave}>
-              Save & Organize
-            </button>
+            <div className="form-actions">
+              <button className="btn secondary" onClick={onClose}>Cancel</button>
+              <button className="btn primary" onClick={handleSave}>
+                Save & Organize
+              </button>
+            </div>
           </div>
         </div>
       </div>

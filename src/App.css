@@ -107,7 +107,11 @@ body {
   display: flex;
   justify-content: center;
   background: var(--white);
-  overflow: hidden;
+  overflow: auto;
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding: var(--spacing-md);
 }
 
 .pdf-container canvas {
@@ -126,87 +130,16 @@ body {
   -ms-interpolation-mode: nearest-neighbor;
 }
 
-/* Magnifier Styles */
-.magnifier {
-  position: absolute;
-  pointer-events: auto;
-  user-select: none;
-  transition: box-shadow 0.2s ease;
-}
-
-.magnifier:hover {
-  box-shadow: 0 6px 12px rgba(0,0,0,0.4) !important;
-}
-
-.magnifier:active {
-  box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
-}
-
-/* Rectangular Banner Magnifier */
-.rectangular-magnifier {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-clip: padding-box;
-}
 
 /* Modal Footer Layout */
 .modal-footer {
   display: flex;
+  justify-content: center;
+  gap: var(--spacing-sm);
   align-items: center;
   padding: var(--spacing-md);
   background: var(--light-gray);
   border-top: 1px solid var(--medium-gray);
-}
-
-.modal-footer .magnifier-toggle-btn {
-  margin-right: auto;
-}
-
-/* Footer Actions - Right side buttons */
-.footer-actions {
-  display: flex;
-  gap: var(--spacing-sm);
-  align-items: center;
-}
-
-.magnifier-toggle-btn {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-xs);
-  background: var(--primary-blue);
-  color: var(--white);
-  border: 1px solid var(--secondary-blue);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  cursor: pointer;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-.magnifier-toggle-btn:hover {
-  background: var(--secondary-blue);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.magnifier-toggle-btn.active {
-  background: var(--light-gray);
-  color: var(--text-primary);
-  border-color: var(--medium-gray);
-}
-
-.magnifier-toggle-btn.active:hover {
-  background: var(--medium-gray);
-}
-
-.magnifier-icon {
-  font-size: 16px;
-}
-
-.magnifier-text {
-  white-space: nowrap;
 }
 
 /* PDF Renderer Styles */
@@ -935,54 +868,58 @@ body {
   pointer-events: none;
 }
 
-/* Modal Styles */
+/* Modal Styles - Full Screen Layout */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: var(--spacing-md);
 }
 
 .modal-content {
   background-color: var(--white);
-  border-radius: var(--radius-lg);
-  width: 90%;
-  max-width: 800px;
-  max-height: 90vh;
+  border-radius: var(--radius-md);
+  width: 95vw;
+  height: 90vh;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-lg);
+  padding: var(--spacing-xs) var(--spacing-md);
   border-bottom: 1px solid var(--medium-gray);
+  background: var(--light-gray);
+  min-height: 36px;
+  flex-shrink: 0;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 24px;
+  font-size: 16px;
+  font-weight: 500;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 28px;
+  font-size: 20px;
   cursor: pointer;
   color: var(--text-secondary);
   padding: 0;
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -991,33 +928,55 @@ body {
 }
 
 .close-btn:hover {
-  background-color: var(--light-gray);
+  background-color: var(--medium-gray);
   color: var(--text-primary);
 }
 
 .modal-body {
   flex: 1;
-  padding: var(--spacing-lg);
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  gap: 0;
+  min-height: 0;
+}
+
+.preview-section {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--white);
+}
+
+.metadata-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow-y: auto;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-xl);
+  min-width: 320px;
+  padding: var(--spacing-md);
+  background: var(--light-gray);
+  border-left: 1px solid var(--medium-gray);
 }
 
 .preview-section h3,
 .metadata-section h3 {
-  margin-bottom: var(--spacing-md);
-  font-size: 18px;
+  margin-bottom: var(--spacing-sm);
+  font-size: 16px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 .pdf-preview {
   background-color: var(--light-gray);
   border: 1px solid var(--medium-gray);
   border-radius: var(--radius-md);
-  height: 400px;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
 }
 
 .pdf-placeholder {
@@ -1158,6 +1117,7 @@ body {
 /* PDF Renderer Styles */
 .pdf-renderer {
   width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1215,14 +1175,14 @@ body {
 
 /* Update existing pdf-preview to work with new renderer */
 .pdf-preview {
-  background-color: transparent;
+  background-color: var(--white);
   border: none;
-  border-radius: var(--radius-md);
-  height: auto;
-  min-height: 400px;
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .file-preview {
@@ -1239,4 +1199,33 @@ body {
 .file-icon {
   font-size: 64px;
   margin-bottom: var(--spacing-md);
+}
+
+/* PDF Controls in Right Panel */
+.pdf-controls-section {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-sm);
+  background: var(--white);
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--radius-md);
+}
+
+.pdf-controls-section .pdf-navigation {
+  justify-content: center;
+  gap: var(--spacing-xs);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+.pdf-controls-section .nav-btn {
+  min-width: 28px;
+  height: 28px;
+  font-size: 12px;
+}
+
+.pdf-controls-section .page-info {
+  font-size: 12px;
+  margin: 0 var(--spacing-xs);
 }
