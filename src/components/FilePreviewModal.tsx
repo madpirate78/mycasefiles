@@ -53,6 +53,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         
         // Try to extract additional info from PDF content
         let pdfData = null;
+        let pdfText = '';
         if (file.type.includes('pdf') && file.data) {
           try {
             console.log('🔄 Starting PDF content extraction...');
@@ -67,6 +68,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             console.log('🔧 Converting File to ArrayBuffer...');
             const arrayBuffer = await file.data.arrayBuffer();
             console.log('✅ ArrayBuffer created, size:', arrayBuffer.byteLength);
+            
+            // Get raw text from PDF via Electron API (for AI description)
+            if (window.electronAPI && window.electronAPI.parsePDF) {
+              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+              if (pdfResult.success && pdfResult.text) {
+                pdfText = pdfResult.text;
+                console.log('📝 Raw PDF text extracted, length:', pdfText.length);
+              }
+            }
             
             console.log('📄 Calling extractFromPDF...');
             pdfData = await extractFromPDF(arrayBuffer);
@@ -110,6 +120,32 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
               }
             }
             // For applications, filename parsing is usually better
+          }
+        }
+
+        // Generate AI description if we have extracted text
+        if (pdfText && pdfText.length > 20) {
+          try {
+            console.log('🤖 Generating AI description...');
+            if (window.electronAPI && window.electronAPI.generateDescription) {
+              const aiResult = await window.electronAPI.generateDescription(
+                pdfText, 
+                file.name
+              );
+              
+              if (aiResult.success && aiResult.description) {
+                finalMetadata.description = aiResult.description;
+                console.log('✅ AI description generated:', aiResult.description);
+                
+                if (aiResult.fallback) {
+                  console.log('⚠️ Used fallback description method');
+                }
+              }
+            } else {
+              console.log('⚠️ AI description not available (not in Electron)');
+            }
+          } catch (error) {
+            console.error('❌ AI description generation failed:', error);
           }
         }
 

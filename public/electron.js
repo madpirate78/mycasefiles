@@ -3,6 +3,10 @@ const path = require('path');
 const isDev = require('electron-is-dev');
 const pdfParse = require('pdf-parse');
 const fs = require('fs');
+const { LegalDocumentAI } = require('./ai/summarizer');
+
+// Initialize AI instance
+const ai = new LegalDocumentAI();
 
 function createWindow() {
   // Create the browser window
@@ -129,7 +133,18 @@ function createWindow() {
 }
 
 // This method will be called when Electron has finished initialization
-app.whenReady().then(createWindow);
+app.whenReady().then(async () => {
+  createWindow();
+  
+  // Initialize AI on app ready
+  try {
+    console.log('🤖 Initializing Local LLM...');
+    await ai.initialize();
+    console.log('✅ AI initialized successfully');
+  } catch (error) {
+    console.error('❌ AI initialization failed:', error);
+  }
+});
 
 // Quit when all windows are closed
 app.on('window-all-closed', () => {
@@ -172,6 +187,61 @@ ipcMain.handle('parse-pdf', async (event, pdfBuffer) => {
     };
   } catch (error) {
     console.error('PDF parsing failed:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+});
+
+// IPC handler for AI description generation
+ipcMain.handle('ai:generate-description', async (event, text, filename = '') => {
+  try {
+    console.log('🧠 Generating AI description for document:', filename);
+    
+    if (!ai.initialized) {
+      console.warn('⚠️ AI not initialized, using basic description');
+      return {
+        success: true,
+        description: ai.generateBasicDescription(filename, text)
+      };
+    }
+    
+    const description = await ai.generateDescription(text, filename);
+    
+    return {
+      success: true,
+      description: description
+    };
+  } catch (error) {
+    console.error('❌ AI description generation failed:', error);
+    
+    // Fallback to basic description
+    return {
+      success: true,
+      description: ai.generateBasicDescription(filename, text),
+      fallback: true
+    };
+  }
+});
+
+// IPC handler for AI summarization (for longer documents)
+ipcMain.handle('ai:summarize', async (event, text) => {
+  try {
+    console.log('📝 Generating AI summary...');
+    
+    if (!ai.initialized) {
+      throw new Error('AI not initialized');
+    }
+    
+    const summary = await ai.generateDescription(text, '', 200); // Longer summary
+    
+    return {
+      success: true,
+      summary: summary
+    };
+  } catch (error) {
+    console.error('❌ AI summarization failed:', error);
     return {
       success: false,
       error: error.message

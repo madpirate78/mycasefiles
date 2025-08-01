@@ -4,6 +4,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
   parsePDF: (pdfBuffer) => ipcRenderer.invoke('parse-pdf', pdfBuffer),
+  generateDescription: (text, filename) => ipcRenderer.invoke('ai:generate-description', text, filename),
+  summarizeDocument: (text) => ipcRenderer.invoke('ai:summarize', text),
   
   // Add other APIs here as needed
   platform: process.platform,

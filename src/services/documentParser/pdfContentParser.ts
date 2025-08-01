@@ -10,6 +10,17 @@ declare global {
         pages?: number;
         error?: string;
       }>;
+      generateDescription: (text: string, filename?: string) => Promise<{
+        success: boolean;
+        description?: string;
+        fallback?: boolean;
+        error?: string;
+      }>;
+      summarizeDocument: (text: string) => Promise<{
+        success: boolean;
+        summary?: string;
+        error?: string;
+      }>;
     };
   }
 }
