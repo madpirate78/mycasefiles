@@ -121,6 +121,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           if (pdfData.judgeName) {
             finalMetadata.judgeName = pdfData.judgeName;
           }
+          
+          // Handle statement-specific data
+          if (pdfData.documentType === 'statement') {
+            finalMetadata.section = 'statements';  // Auto-set to statements section
+            if (pdfData.personName) {
+              finalMetadata.personName = pdfData.personName;
+            }
+          }
+          
           if (pdfData.documentType && !finalMetadata.documentType) {
             // Map PDF document type to form document type
             if (pdfData.documentType === 'order') {

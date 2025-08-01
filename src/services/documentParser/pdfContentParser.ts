@@ -34,10 +34,15 @@ export class PDFContentParser {
       /Case\s+no[:\s\.]+([A-Z0-9]+)/i,
       /Case\s+#[:\s]+([A-Z0-9]+)/i,
       
-      // UK Family Court case number patterns
-      /([A-Z]{2}\d{2}[A-Z]\d{5})/g,  // e.g., AB12C34567
+      // UK Family Court case number patterns - ENHANCED FOR STATEMENTS
+      /([A-Z]{2}\d{2}[A-Z]\d{5})/g,  // Exact pattern: e.g., AB12C34567
       /([A-Z]{2}\d{2}[A-Z]{1,2}\d{4,5})/g,  // variations
       /([A-Z]{1,3}\d{2,4}[A-Z]?\d{3,6})/g,  // broader pattern
+      
+      // Statement-specific patterns (look for family court refs anywhere in text)
+      /(?:case|matter|ref|reference|proceeding)[s]?[:\s]*([A-Z]{2}\d{2}[A-Z]\d{5})/i,
+      /In\s+the\s+matter\s+of[^:]*:\s*([A-Z]{2}\d{2}[A-Z]\d{5})/i,
+      /Between.*?([A-Z]{2}\d{2}[A-Z]\d{5})/i,
       
       // Common court reference formats
       /Court\s+Reference[:\s]+([A-Z0-9]+)/i,
@@ -76,7 +81,7 @@ export class PDFContentParser {
       /(\d{1,2}(?:st|nd|rd|th)?\s+[A-Z][a-z]+\s+\d{4})/i
     ],
     
-    // Party names
+    // Party names - ENHANCED FOR STATEMENTS
     applicant: [
       /The\s+applicant\s+(?:mother\s+)?is\s+([^,\n]+)/i,
       /Applicant[:\s]+([^\n]+)/i,
@@ -91,8 +96,66 @@ export class PDFContentParser {
       /Respondent.*?Name[:\s]+([^\n]+)/i
     ],
     
+    // Statement-specific person name patterns (look in first part of document)
+    statementPersonName: [
+      // "I, [Title] [Initial/Name] [Surname], of [address] make oath and say:" - BEST PATTERN
+      /I,\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+),?\s+of\s+/i,
+      // "I, [First] [Last], of" - without title
+      /I,\s+([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+of\s+/i,
+      // "I, [Name], will say" or "I, [Name], make oath"
+      /I,\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+|[A-Z][a-z]+\s+[A-Z][a-z]+),?\s+(?:will\s+say|make\s+oath)/i,
+      
+      // "Statement of Respondent: [Title] [Name]" or "Statement of Applicant: [Title] [Name]"
+      /Statement\s+of\s+(?:Respondent|Applicant):\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      // "Statement of [Title] [Name]" - direct format
+      /Statement\s+of\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      // "Witness Statement of [Title] [Name]"
+      /Witness\s+Statement\s+of\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      
+      // Handle ALL CAPS names (scanned documents)
+      // "STATEMENT OF MR A SMITH" or "STATEMENT OF MR ADAM SMITH"
+      /STATEMENT\s+OF\s+(MR|MRS|MS|MISS|DR)\s+([A-Z]\.?\s+[A-Z]+|[A-Z]+\s+[A-Z]+)/i,
+      // "I, MR ADAM SMITH, OF"
+      /I,\s+(MR|MRS|MS|MISS|DR)\s+([A-Z]\.?\s+[A-Z]+|[A-Z]+\s+[A-Z]+),?\s+OF\s+/i,
+      
+      // Fallback patterns
+      // "I [Name] of [address] swear/affirm:"
+      /I\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)\s+of\s+.*?(?:swear|affirm|make\s+oath)/i,
+      // "[Name] - Witness Statement" or "[Name] - Statement"
+      /^((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)\s*[-–]\s*(?:Witness\s+)?Statement/mi,
+      // Look for "My name is [Title] [Name]"
+      /My\s+name\s+is\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      // Look for names after "I am"
+      /I\s+am\s+((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      
+      // Signature patterns at end of document - check last 500 chars
+    ],
+    
+    // Signature patterns specifically for end of statements
+    signaturePatterns: [
+      // "Signed: [Title] [Name]" or "Signature: [Title] [Name]"
+      /(?:Signed|Signature):\s*((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      // "[Title] [Name]" on its own line near end (after "Signed" or similar context)
+      /(?:Signed|Signature|Print\s+name).*?\n\s*((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      // "Name: [Title] [Name]" or "Print Name: [Title] [Name]"
+      /(?:Print\s+)?Name:\s*((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]\.?\s+[A-Z][a-z]+|(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)/i,
+      // Just a name on its own line near signatures
+      /(?:Signed|Date).*?\n\s*((?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z][a-z]+\s+[A-Z][a-z]+)\s*\n/i,
+      // ALL CAPS signature patterns
+      /(?:SIGNED|SIGNATURE|NAME):\s*(MR|MRS|MS|MISS|DR)\s+([A-Z]\.?\s+[A-Z]+|[A-Z]+\s+[A-Z]+)/i,
+    ],
+    
     // Document type identifiers - focus on key patterns
     documentType: [
+      // Statement patterns - CHECK FIRST (most specific)
+      { pattern: /Witness\s+Statement/i, type: 'statement' },
+      { pattern: /Statement\s+of\s+[A-Z]/i, type: 'statement' },
+      { pattern: /I,\s+[A-Z][a-z]+.*?make\s+oath/i, type: 'statement' },
+      { pattern: /I\s+[A-Z][a-z]+.*?(?:swear|affirm)/i, type: 'statement' },
+      { pattern: /Position\s+Statement/i, type: 'statement' },
+      { pattern: /Statement\s+in\s+support/i, type: 'statement' },
+      { pattern: /Affidavit/i, type: 'statement' },
+      
       // Order patterns
       { pattern: /C21\s+Blank\s+Order/i, type: 'order' },
       { pattern: /General\s+Form\s+of\s+Order/i, type: 'order' },
@@ -116,7 +179,7 @@ export class PDFContentParser {
   /**
    * Extract text from PDF buffer and parse document info
    */
-  async extractFromPDF(pdfBuffer: ArrayBuffer): Promise<{ caseNumber: string | null; documentType: 'order' | 'application' | null; judgeName: string | null }> {
+  async extractFromPDF(pdfBuffer: ArrayBuffer): Promise<{ caseNumber: string | null; documentType: 'order' | 'application' | 'statement' | null; judgeName: string | null; personName?: string | null }> {
     try {
       console.log('🔧 PDF extraction started, buffer size:', pdfBuffer.byteLength);
       console.log('🌐 Environment check - electronAPI available:', !!window.electronAPI);
@@ -135,25 +198,25 @@ export class PDFContentParser {
           return extracted;
         } else {
           console.error('❌ Electron PDF parsing failed:', result.error);
-          return { caseNumber: null, documentType: null, judgeName: null };
+          return { caseNumber: null, documentType: null, judgeName: null, personName: null };
         }
       } else {
         // Fallback to browser-based parsing (limited functionality)
         console.warn('⚠️ Electron API not available, falling back to limited parsing');
         console.log('🌍 Running in browser mode - PDF parsing disabled');
-        return { caseNumber: null, documentType: null, judgeName: null };
+        return { caseNumber: null, documentType: null, judgeName: null, personName: null };
       }
     } catch (error) {
       console.error('💥 PDF parsing failed:', error);
-      return { caseNumber: null, documentType: null, judgeName: null };
+      return { caseNumber: null, documentType: null, judgeName: null, personName: null };
     }
   }
 
   /**
    * Extract ONLY the most important information from PDF text content
-   * Focus: Court Reference Number, Document Type, and Judge Name
+   * Focus: Court Reference Number, Document Type, Judge Name, and Person Name (for statements)
    */
-  extractFromText(pdfText: string): { caseNumber: string | null; documentType: 'order' | 'application' | null; judgeName: string | null } {
+  extractFromText(pdfText: string): { caseNumber: string | null; documentType: 'order' | 'application' | 'statement' | null; judgeName: string | null; personName?: string | null } {
     console.log('🔍 Extracting key info from PDF text, length:', pdfText.length);
     console.log('📃 First 500 chars of PDF text:', pdfText.substring(0, 500));
     
@@ -165,14 +228,19 @@ export class PDFContentParser {
     const documentType = this.identifyDocumentType(pdfText);
     console.log('📋 Identified document type:', documentType);
 
-    // 3. Extract judge name (THIRD MOST IMPORTANT)
+    // 3. Extract judge name (THIRD MOST IMPORTANT - for orders)
     const judgeName = this.extractJudgeName(pdfText);
     console.log('👨‍⚖️ Extracted judge name:', judgeName);
+
+    // 4. Extract person name (FOR STATEMENTS - look in first part of document)
+    const personName = this.extractStatementPersonName(pdfText);
+    console.log('👤 Extracted person name (statement):', personName);
 
     return {
       caseNumber,
       documentType,
-      judgeName
+      judgeName,
+      personName
     };
   }
 
@@ -359,17 +427,211 @@ export class PDFContentParser {
   }
 
   /**
-   * Identify if document is an order or application
+   * Identify if document is an order, application, or statement
    */
-  private identifyDocumentType(text: string): 'order' | 'application' | null {
-    // Check each pattern with its type
+  private identifyDocumentType(text: string): 'order' | 'application' | 'statement' | null {
+    // Check each pattern with its type - statements checked first
     for (const item of this.patterns.documentType) {
       if (item.pattern.test(text)) {
-        return item.type as 'order' | 'application';
+        return item.type as 'order' | 'application' | 'statement';
       }
     }
 
     return null;
+  }
+
+  /**
+   * Extract person name from statement documents - look in first 800 chars and last 500 chars (signature)
+   */
+  private extractStatementPersonName(text: string): string | null {
+    console.log('👤 Looking for statement person name...');
+    
+    // Focus on first 800 characters where names typically appear in headers
+    const firstPart = text.substring(0, 800);
+    console.log('🔎 Searching in first 800 chars:', firstPart.substring(0, 200) + '...');
+    
+    // Try each pattern specifically designed for statement headers
+    for (let i = 0; i < this.patterns.statementPersonName.length; i++) {
+      const pattern = this.patterns.statementPersonName[i];
+      console.log(`👤 Header Pattern ${i + 1}:`, pattern.toString());
+      
+      const match = firstPart.match(pattern);
+      if (match && match[1]) {
+        const name = match[1].trim();
+        console.log(`✅ Header Pattern ${i + 1} matched:`, name);
+        
+        // Validate it looks like a real name
+        if (this.isValidPersonName(name)) {
+          const cleanedName = this.cleanPersonName(name);
+          console.log('✅ Valid person name found in header, cleaned:', cleanedName);
+          return cleanedName;
+        } else {
+          console.log('❌ Invalid person name format:', name);
+        }
+      } else {
+        console.log(`❌ Header Pattern ${i + 1} no match`);
+      }
+    }
+    
+    // If no name found in header, check signature area at end
+    console.log('🔎 No name in header, checking signature area...');
+    const lastPart = text.substring(Math.max(0, text.length - 500));
+    console.log('📝 Searching in last 500 chars:', lastPart.substring(0, 200) + '...');
+    
+    // Try signature patterns
+    for (let i = 0; i < this.patterns.signaturePatterns.length; i++) {
+      const pattern = this.patterns.signaturePatterns[i];
+      console.log(`✍️ Signature Pattern ${i + 1}:`, pattern.toString());
+      
+      const match = lastPart.match(pattern);
+      if (match) {
+        // For signature patterns, name might be in match[1] or match[2] depending on pattern
+        const name = (match[1] || match[2] || '').trim();
+        if (name) {
+          console.log(`✅ Signature Pattern ${i + 1} matched:`, name);
+          
+          if (this.isValidPersonName(name)) {
+            const cleanedName = this.cleanPersonName(name);
+            console.log('✅ Valid person name found in signature, cleaned:', cleanedName);
+            return cleanedName;
+          } else {
+            console.log('❌ Invalid signature name format:', name);
+          }
+        }
+      } else {
+        console.log(`❌ Signature Pattern ${i + 1} no match`);
+      }
+    }
+    
+    console.log('❌ No person name found in statement or signature');
+    return null;
+  }
+
+  /**
+   * Validate that extracted text looks like a person name
+   */
+  private isValidPersonName(name: string): boolean {
+    // Basic validation for person names
+    if (!name || name.length < 2 || name.length > 50) {
+      return false;
+    }
+    
+    // Should contain at least one letter
+    if (!/[A-Za-z]/.test(name)) {
+      return false;
+    }
+    
+    // Should not be all numbers
+    if (/^\d+$/.test(name)) {
+      return false;
+    }
+    
+    // Should not contain too many special characters
+    if ((name.match(/[^A-Za-z\s'-]/g) || []).length > 2) {
+      return false;
+    }
+    
+    // All caps names are OK if they're reasonable length (could be scanned documents)
+    if (name === name.toUpperCase() && name.length > 30) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Clean person name to format like "Mr First Surname" or "Mr Initial Surname"
+   */
+  private cleanPersonName(name: string): string {
+    console.log('🧹 Cleaning person name:', name);
+    
+    let cleaned = name.trim();
+    
+    // Remove common prefixes that aren't titles
+    cleaned = cleaned
+      .replace(/^(?:Statement\s+of\s+)?(?:Respondent|Applicant)[:\s]*/, '') // Remove "Statement of Respondent:"
+      .replace(/^(?:Witness\s+Statement\s+of\s+)/, '') // Remove "Witness Statement of"
+      .replace(/^(?:Position\s+Statement\s+of\s+)/, '') // Remove "Position Statement of"
+      .trim();
+    
+    // Handle formats like "I, John Smith, of" -> extract "John Smith"
+    if (cleaned.startsWith('I,')) {
+      const match = cleaned.match(/^I,\s+([^,]+),?/);
+      if (match && match[1]) {
+        cleaned = match[1].trim();
+      }
+    }
+    
+    // Split into parts to analyze
+    const parts = cleaned.split(/\s+/).filter(part => part.length > 0);
+    
+    if (parts.length === 0) {
+      return cleaned;
+    }
+    
+    // Look for title + name patterns
+    let title = '';
+    let nameStart = 0;
+    
+    // Check if first part is a title (Mr, Mrs, Ms, Dr, etc.)
+    const firstPart = parts[0].toLowerCase();
+    if (['mr', 'mrs', 'ms', 'miss', 'dr', 'prof', 'professor'].includes(firstPart)) {
+      title = parts[0];
+      nameStart = 1;
+    } else if (parts.length >= 2) {
+      // Look for title in second position (e.g., "John Mr Smith" -> "Mr John Smith")
+      const secondPart = parts[1].toLowerCase();
+      if (['mr', 'mrs', 'ms', 'miss', 'dr'].includes(secondPart)) {
+        title = parts[1];
+        // Rearrange: first part is name, title goes first
+        const rearranged = [title, parts[0], ...parts.slice(2)];
+        parts.splice(0, parts.length, ...rearranged);
+        nameStart = 1;
+      }
+    }
+    
+    // If no title found, assume "Mr" for male-sounding names or default
+    if (!title && nameStart === 0) {
+      // Simple heuristic: common male names get "Mr", others get "Mr" as default
+      // This is a reasonable default for family court statements
+      title = 'Mr';
+    }
+    
+    // Extract name parts (skip title)
+    const nameParts = parts.slice(nameStart);
+    
+    if (nameParts.length === 0) {
+      return cleaned; // Fallback to original
+    }
+    
+    // Format: "Title FirstName LastName" or "Title Initial LastName"
+    let result = title;
+    
+    if (nameParts.length === 1) {
+      // Single name: "Mr John" or "Mr Smith"
+      result += ' ' + nameParts[0];
+    } else if (nameParts.length === 2) {
+      // Two parts: "Mr John Smith" or "Mr J Smith"
+      result += ' ' + nameParts[0] + ' ' + nameParts[1];
+    } else {
+      // Multiple parts: take first and last, maybe middle initial
+      const firstName = nameParts[0];
+      const lastName = nameParts[nameParts.length - 1];
+      
+      // Check if there's a middle initial (single letter or letter+period)
+      let middleInitial = '';
+      if (nameParts.length > 2) {
+        const middlePart = nameParts[1];
+        if (middlePart.length === 1 || (middlePart.length === 2 && middlePart.endsWith('.'))) {
+          middleInitial = ' ' + middlePart;
+        }
+      }
+      
+      result += ' ' + firstName + middleInitial + ' ' + lastName;
+    }
+    
+    console.log('✨ Cleaned name result:', result);
+    return result;
   }
 
 }
