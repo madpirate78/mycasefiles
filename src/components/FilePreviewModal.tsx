@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StoredFile } from '../services/indexedDBService';
-import PDFRenderer, { PDFNavigationControls } from './PDFRenderer';
+import PDFRenderer from './PDFRenderer';
 
 interface FilePreviewModalProps {
   file: StoredFile | null;
@@ -39,8 +39,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     section: 'other',
     description: ''
   });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
 
   const sectionConfigs: SectionConfig[] = [
     {
@@ -280,11 +278,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
                   onLoad={() => console.log('PDF loaded successfully')}
                   onError={(error) => console.error('PDF error:', error)}
                   showNavigation={false}
-                  externalPageNumber={currentPage}
-                  onPageChange={(pageNumber, totalPages) => {
-                    setCurrentPage(pageNumber);
-                    setTotalPages(totalPages);
-                  }}
                 />
               ) : (
                 <div className="file-preview">
@@ -298,19 +291,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
           <div className="metadata-section">
             <h3>Document Information</h3>
-            
-            {file.type.includes('pdf') && totalPages > 1 && (
-              <div className="pdf-controls-section">
-                <PDFNavigationControls
-                  pageNumber={currentPage}
-                  numPages={totalPages}
-                  onFirstPage={() => setCurrentPage(1)}
-                  onPreviousPage={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  onNextPage={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  onLastPage={() => setCurrentPage(totalPages)}
-                />
-              </div>
-            )}
             
             <div className="form-group">
               <label>Document Section *</label>
