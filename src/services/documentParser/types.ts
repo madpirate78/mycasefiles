@@ -1,17 +1,20 @@
-// Types for extracted data
+// Types for extracted data - simplified for current use
 export interface CourtDocumentData {
   caseNumber: string | null;
-  courtName: string | null;
-  documentType: 'order' | 'application' | null;
-  applicationType?: string | null;
+  documentType: 'order' | 'application' | 'statement' | null;
   judgeName: string | null;
-  orderDate: Date | null;
-  applicationDate: Date | null;
-  applicant: {
+  personName?: string | null;  // For statements - the person making the statement
+  
+  // Optional fields for future expansion
+  courtName?: string | null;
+  applicationType?: string | null;
+  orderDate?: Date | null;
+  applicationDate?: Date | null;
+  applicant?: {
     name: string | null;
     relationship?: string | null;
   };
-  respondent: {
+  respondent?: {
     name: string | null;
     relationship?: string | null;
   };
@@ -25,7 +28,7 @@ export interface CourtDocumentData {
 // Filename extraction result
 export interface FilenameData {
   caseNumber?: string | null;
-  documentType?: 'order' | 'application' | null;
+  documentType?: 'order' | 'application' | 'statement' | null;
   applicationType?: string | null;
   date?: Date | null;
   formType?: string | null;

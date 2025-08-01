@@ -61,14 +61,14 @@ export class PDFContentParser {
     applicant: [
       /The\s+applicant\s+(?:mother\s+)?is\s+([^,\n]+)/i,
       /Applicant[:\s]+([^\n]+)/i,
-      /About\s+you\s+\(the\s+applicant\)[^}]+?State\s+your\s+.+?:\s*([^\n]+)/is,
+      /About\s+you\s+\(the\s+applicant\)[\s\S]+?State\s+your\s+[\s\S]+?:\s*([^\n]+)/i,
       /Applicant.*?Name[:\s]+([^\n]+)/i
     ],
     
     respondent: [
       /The\s+(?:first\s+)?respondent\s+(?:father\s+)?is\s+([^,\n]+)/i,
       /Respondent[:\s]+([^\n]+)/i,
-      /About\s+the\s+respondent[^}]+?State\s+the\s+respondent['']s\s+name[^:]*:\s*([^\n]+)/is,
+      /About\s+the\s+respondent[\s\S]+?State\s+the\s+respondent['']s\s+name[^:]*:\s*([^\n]+)/i,
       /Respondent.*?Name[:\s]+([^\n]+)/i
     ],
     
@@ -121,18 +121,9 @@ export class PDFContentParser {
       /(?:SIGNED|SIGNATURE|NAME):\s*(MR|MRS|MS|MISS|DR)\s+([A-Z]\.?\s+[A-Z]+|[A-Z]+\s+[A-Z]+)/i,
     ],
     
-    // Document type identifiers - focus on key patterns
+    // Document type identifiers - Order patterns first (most specific)
     documentType: [
-      // Statement patterns - CHECK FIRST (most specific)
-      { pattern: /Witness\s+Statement/i, type: 'statement' },
-      { pattern: /Statement\s+of\s+[A-Z]/i, type: 'statement' },
-      { pattern: /I,\s+[A-Z][a-z]+.*?make\s+oath/i, type: 'statement' },
-      { pattern: /I\s+[A-Z][a-z]+.*?(?:swear|affirm)/i, type: 'statement' },
-      { pattern: /Position\s+Statement/i, type: 'statement' },
-      { pattern: /Statement\s+in\s+support/i, type: 'statement' },
-      { pattern: /Affidavit/i, type: 'statement' },
-      
-      // Order patterns
+      // Order patterns - CHECK FIRST (highest priority)
       { pattern: /C21\s+Blank\s+Order/i, type: 'order' },
       { pattern: /General\s+Form\s+of\s+Order/i, type: 'order' },
       { pattern: /ORDER\s+MADE\s+BY/i, type: 'order' },
@@ -140,6 +131,8 @@ export class PDFContentParser {
       { pattern: /THE\s+COURT\s+ORDERS/i, type: 'order' },
       { pattern: /INTERIM\s+ORDER/i, type: 'order' },
       { pattern: /FINAL\s+ORDER/i, type: 'order' },
+      { pattern: /Court\s+Order/i, type: 'order' },
+      { pattern: /IT\s+IS\s+ORDERED/i, type: 'order' },
       
       // Application patterns
       { pattern: /Application\s+for/i, type: 'application' },
@@ -147,6 +140,15 @@ export class PDFContentParser {
       { pattern: /C100.*Application/i, type: 'application' },
       { pattern: /C78.*Application/i, type: 'application' },
       { pattern: /C1A.*Allegations/i, type: 'application' },
+      
+      // Statement patterns - CHECK LAST (more specific patterns)
+      { pattern: /Witness\s+Statement/i, type: 'statement' },
+      { pattern: /Statement\s+of\s+(?:Mr|Mrs|Ms|Miss|Dr)\s+[A-Z]/i, type: 'statement' }, // More specific
+      { pattern: /I,\s+[A-Z][a-z]+.*?make\s+oath/i, type: 'statement' },
+      { pattern: /I\s+[A-Z][a-z]+.*?(?:swear|affirm)/i, type: 'statement' },
+      { pattern: /Position\s+Statement/i, type: 'statement' },
+      { pattern: /Statement\s+in\s+support/i, type: 'statement' },
+      { pattern: /Affidavit/i, type: 'statement' },
       { pattern: /Form\s+C100/i, type: 'application' },
       { pattern: /Form\s+FL401/i, type: 'application' }
     ]
@@ -155,7 +157,7 @@ export class PDFContentParser {
   /**
    * Extract text from PDF buffer and parse document info
    */
-  async extractFromPDF(pdfBuffer: ArrayBuffer): Promise<{ caseNumber: string | null; documentType: 'order' | 'application' | 'statement' | null; judgeName: string | null; personName?: string | null }> {
+  async extractFromPDF(pdfBuffer: ArrayBuffer): Promise<CourtDocumentData> {
     try {
       console.log('🔧 PDF extraction started, buffer size:', pdfBuffer.byteLength);
       console.log('🌐 Environment check - electronAPI available:', !!window.electronAPI);
@@ -192,7 +194,7 @@ export class PDFContentParser {
    * Extract ONLY the most important information from PDF text content
    * Focus: Court Reference Number, Document Type, Judge Name, and Person Name (for statements)
    */
-  extractFromText(pdfText: string): { caseNumber: string | null; documentType: 'order' | 'application' | 'statement' | null; judgeName: string | null; personName?: string | null } {
+  extractFromText(pdfText: string): CourtDocumentData {
     console.log('📄 Parsing document text (', pdfText.length, 'chars)');
     
     // 1. Extract court reference number (MOST IMPORTANT)
@@ -232,19 +234,6 @@ export class PDFContentParser {
           console.log('✅ Case number extracted:', caseNum);
           return caseNum;
         }
-      }
-    }
-    return null;
-  }
-
-  /**
-   * Extract pattern from text using multiple regex patterns (from DOC_PARSER.md)
-   */
-  private extractPattern(text: string, patterns: RegExp[]): string | null {
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        return match[1].trim();
       }
     }
     return null;
@@ -316,81 +305,6 @@ export class PDFContentParser {
     }
 
     return cleaned;
-  }
-
-  /**
-   * Enhanced date parsing from DOC_PARSER.md
-   */
-  private parseDate(dateStr: string): Date | null {
-    if (!dateStr) return null;
-
-    // Clean the date string
-    dateStr = dateStr.trim();
-
-    // Try different date formats
-    const formats = [
-      // "22nd March 2022", "1st January 2023"
-      /(\d{1,2})(?:st|nd|rd|th)?\s+([A-Z][a-z]+)\s+(\d{4})/i,
-      // "22 March 2022"
-      /(\d{1,2})\s+([A-Z][a-z]+)\s+(\d{4})/i,
-      // "22/03/2022" or "22.03.2022"
-      /(\d{1,2})[/.](\d{1,2})[/.](\d{4})/,
-      // "06 Jan 2016"
-      /(\d{1,2})\s+([A-Z][a-z]{2,3})\s+(\d{4})/i,
-      // "2022/03/23"
-      /(\d{4})[/.](\d{1,2})[/.](\d{1,2})/
-    ];
-
-    for (const format of formats) {
-      const match = dateStr.match(format);
-      if (match) {
-        try {
-          if (match.length === 4) {
-            // Day Month Year format
-            const day = parseInt(match[1]);
-            const monthStr = match[2];
-            const year = parseInt(match[3]);
-
-            const monthMap: { [key: string]: number } = {
-              'january': 0, 'jan': 0,
-              'february': 1, 'feb': 1,
-              'march': 2, 'mar': 2,
-              'april': 3, 'apr': 3,
-              'may': 4,
-              'june': 5, 'jun': 5,
-              'july': 6, 'jul': 6,
-              'august': 7, 'aug': 7,
-              'september': 8, 'sep': 8, 'sept': 8,
-              'october': 9, 'oct': 9,
-              'november': 10, 'nov': 10,
-              'december': 11, 'dec': 11
-            };
-
-            const month = monthMap[monthStr.toLowerCase()];
-            if (month !== undefined) {
-              return new Date(year, month, day);
-            }
-          } else if (dateStr.includes('/') || dateStr.includes('.')) {
-            // Numeric date format - prioritize UK format (DD/MM/YYYY)
-            if (match[3].length === 4) {
-              // DD/MM/YYYY (UK format)
-              return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
-            } else if (match[1].length === 4) {
-              // YYYY/MM/DD (ISO format)
-              return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
-            } else {
-              // MM/DD/YY or DD/MM/YY - assume UK format (DD/MM/YY)
-              const year = parseInt(match[3]) + (parseInt(match[3]) < 50 ? 2000 : 1900);
-              return new Date(year, parseInt(match[2]) - 1, parseInt(match[1]));
-            }
-          }
-        } catch (e) {
-          // Continue to next format
-        }
-      }
-    }
-
-    return null;
   }
 
   /**
