@@ -41,3 +41,7 @@ Thumbs.db
 
 # PDF.js local assets (regenerated via npm script)
 /public/pdfjs-dist/
+
+# AI models (large files - downloaded on first use)
+/models/
+*.onnx
