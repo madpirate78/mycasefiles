@@ -1,6 +1,6 @@
 # MyCaseFiles - Desktop Legal Document Management System
 
-A comprehensive legal case management desktop application designed for self-represented litigants and legal professionals. Built with React, TypeScript, and Electron, featuring advanced PDF document organization, intelligent text extraction, and automated metadata population for UK family court documents.
+A comprehensive legal case management desktop application designed for self-represented litigants and legal professionals. Built with React, TypeScript, and Electron, featuring advanced PDF document organization, intelligent text extraction, automated metadata population for UK family court documents, and local AI-powered document analysis.
 
 ## 🎯 Current Features
 
@@ -18,6 +18,13 @@ A comprehensive legal case management desktop application designed for self-repr
 - **High-Quality PDF Renderer**: Offline-first PDF.js integration with local assets
 - **Carousel Navigation**: Floating navigation buttons around PDF for intuitive page control
 - **Full-Screen PDF View**: Maximized PDF preview area (95vw × 90vh) with controls in right panel
+
+### AI Intelligence
+- **Local LLM Integration**: On-device Transformers.js model for privacy and offline use
+- **Automatic Description Generation**: AI creates concise descriptions of court documents
+- **Legal Context Awareness**: Model trained on legal document patterns
+- **Fallback Intelligence**: Basic description generation when AI model is loading
+- **~250MB Model Size**: Distilbart-cnn-6-6 model downloads once and runs locally
 
 ### Desktop Experience
 - **Native Desktop App**: Electron wrapper providing full Node.js capabilities
@@ -126,7 +133,8 @@ public/
 docs/
 ├── UI_SPEC.md                  # Comprehensive UI specification
 ├── react_PDF.md               # PDF processing documentation
-└── DOC_PARSER.md              # Document parsing algorithm and patterns
+├── DOC_PARSER.md              # Document parsing algorithm and patterns
+└── LOCAL_LLM.md               # Local AI model documentation and setup
 ```
 
 ## 🔧 Technical Architecture
@@ -136,6 +144,7 @@ docs/
 - **IPC Communication**: Secure main/renderer process communication via preload script
 - **Cross-Platform**: Windows, macOS, and Linux support via electron-builder
 - **Security**: Context isolation and disabled node integration for security
+- **Native Menus**: Custom menu bar with legal document management shortcuts
 
 ### PDF Processing & Intelligence
 - **pdf-parse**: Server-side PDF text extraction in Electron main process
@@ -149,6 +158,13 @@ docs/
 - **Auto-Population**: Smart field mapping based on document section and extracted data
 - **UK Legal System**: Specialized patterns for family court documents
 - **Judge Abbreviations**: Automatic conversion (Her Honour Judge → HHJ, etc.)
+
+### AI & Machine Learning
+- **Transformers.js**: JavaScript implementation of Hugging Face Transformers
+- **Local Model**: Distilbart-cnn-6-6 for document summarization
+- **ONNX Runtime**: Optimized model inference for fast performance
+- **Automatic Caching**: Models download once (~250MB) and cache locally
+- **Privacy-First**: All AI processing happens on-device, no data sent to cloud
 
 ### Data Management
 - **IndexedDB**: Browser-native storage for documents and metadata
@@ -186,6 +202,7 @@ docs/
 - **UK Court Integration**: Pattern recognition for case numbers (AB12C34567), form types (C100, FL401), judge abbreviations (HHJ, DJ, DDJ) ✅ **TESTED & WORKING**
 - **Smart Auto-Population**: Intelligent form field pre-filling works for both text-based and scanned PDFs ✅ **TESTED & WORKING**
 - **Professional Menu System**: Custom legal document management menus with keyboard shortcuts ✅ **WORKING**
+- **AI Document Descriptions**: Local LLM generates intelligent descriptions for court documents using Transformers.js ✅ **TESTED & WORKING**
 - **Dynamic Document Organization**: Section-specific metadata fields for UK family court structure
 - **Carousel PDF Navigation**: Floating buttons around PDF for intuitive page control
 - **Full-Screen PDF View**: Maximized preview area with controls panel layout
@@ -239,6 +256,7 @@ docs/
 - **[UI Specification](docs/UI_SPEC.md)** - Complete design system and user experience guidelines
 - **[PDF Processing Guide](docs/react_PDF.md)** - Technical notes on PDF handling and rendering
 - **[Document Parser Guide](docs/DOC_PARSER.md)** - PDF text extraction patterns and algorithms
+- **[Local AI Guide](docs/LOCAL_LLM.md)** - Local language model integration and setup
 - **[CLAUDE.md](CLAUDE.md)** - Development configuration and project context
 
 ## 🤝 Contributing
@@ -262,4 +280,4 @@ This project is proprietary software designed for legal document management.
 
 ---
 
-**Built with React, TypeScript, Electron, and intelligent PDF parsing for professional UK family court document management.**
+**Built with React, TypeScript, Electron, intelligent PDF parsing, and local AI for professional UK family court document management.**
