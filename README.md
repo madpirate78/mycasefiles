@@ -13,8 +13,11 @@ A comprehensive legal case management desktop application designed for self-repr
 
 ### PDF Processing & Analysis
 - **Desktop PDF Text Extraction**: Full pdf-parse library integration via Electron main process
-- **Automated Field Population**: Court reference numbers, judge names, document types
+- **Automated Field Population**: Court reference numbers, judge names, document types, person names
 - **UK Court Pattern Recognition**: Case numbers (AB12C34567), form types (C100, FL401), judge abbreviations (HHJ, DJ, DDJ)
+- **Enhanced Statement Processing**: Comprehensive name extraction from headers, "I, [Name]" patterns, and signature areas
+- **Smart Document Classification**: Auto-detects statements, orders, and applications with section-specific field mapping
+- **UK Legal Name Formatting**: Proper title handling (Mr/Mrs/Ms + Initial/First + Surname) with intelligent cleaning
 - **High-Quality PDF Renderer**: Offline-first PDF.js integration with local assets
 - **Carousel Navigation**: Floating navigation buttons around PDF for intuitive page control
 - **Full-Screen PDF View**: Maximized PDF preview area (95vw × 90vh) with controls in right panel
@@ -161,10 +164,13 @@ docs/
 - **Intelligent Parsing**: Two-stage extraction (filename → PDF content → form population)
 
 ### Document Intelligence
-- **Pattern Recognition**: UK court case numbers, form types, judge names
+- **Pattern Recognition**: UK court case numbers, form types, judge names, person names
 - **Auto-Population**: Smart field mapping based on document section and extracted data
-- **UK Legal System**: Specialized patterns for family court documents
+- **UK Legal System**: Specialized patterns for family court documents and statements
 - **Judge Abbreviations**: Automatic conversion (Her Honour Judge → HHJ, etc.)
+- **Statement Processing**: Multi-pattern name extraction from headers, "I, [Name]" clauses, and signatures
+- **Name Formatting**: Intelligent cleaning and formatting (Mr/Mrs/Ms + Initial/First + Surname)
+- **Family Court References**: Perfect XX##X##### pattern matching (e.g., AB12C34567)
 
 ### AI & Machine Learning
 - **Transformers.js**: JavaScript implementation of Hugging Face Transformers
@@ -178,6 +184,16 @@ docs/
 - **TypeScript**: Type-safe development with interfaces for all data structures
 - **Dynamic metadata**: Section-specific form fields based on document type
 - **Filename-first Strategy**: Prioritize structured filename data over PDF parsing
+
+### Parsing Strategy & Workflow
+- **Three-Stage Extraction**: Filename parsing → PDF content analysis → Field population
+- **Current Approach**: Document-by-document parsing with pattern matching
+- **Planned Enhancement**: Case pre-input workflow for maximum accuracy:
+  1. **Case Setup Phase**: User inputs basic case details (court, parties, case number, children)
+  2. **Enhanced Parsing**: Use known case data to validate and improve extraction
+  3. **Smart Matching**: Cross-reference extracted data with pre-input information
+  4. **Accuracy Boost**: Known party names and court details dramatically improve parsing success
+- **Fallback Strategy**: Robust pattern matching ensures functionality even without pre-input data
 
 ### Styling & UI
 - **CSS Custom Properties**: Consistent design system with calm color palette
@@ -208,6 +224,8 @@ docs/
 - **Dual-Strategy Parsing**: Filename-first approach with PDF content fallback for optimal accuracy ✅ **TESTED & WORKING**
 - **UK Court Integration**: Pattern recognition for case numbers (AB12C34567), form types (C100, FL401), judge abbreviations (HHJ, DJ, DDJ) ✅ **TESTED & WORKING**
 - **Smart Auto-Population**: Intelligent form field pre-filling works for both text-based and scanned PDFs ✅ **TESTED & WORKING**
+- **Enhanced Statement Processing**: Comprehensive person name extraction from headers, patterns, and signatures ✅ **TESTED & WORKING**
+- **UK Legal Name Formatting**: Proper title and name cleaning (Mr/Mrs/Ms + Initial/First + Surname) ✅ **TESTED & WORKING**
 - **Professional Menu System**: Custom legal document management menus with keyboard shortcuts ✅ **WORKING**
 - **Local AI Framework**: Transformers.js infrastructure ready for future batch document processing ✅ **READY FOR IMPLEMENTATION**
 - **Dynamic Document Organization**: Section-specific metadata fields for UK family court structure
@@ -218,6 +236,7 @@ docs/
 - **Cross-Platform Support**: Windows, macOS, and Linux desktop packaging
 
 ### 🚧 In Development
+- **Case Pre-Input Workflow**: Initial case setup page for enhanced parsing accuracy with pre-filled party names and court details
 - **Enhanced PDF Parsing**: Party name extraction and children information parsing
 - **Court Name Recognition**: Automatic detection of family court locations
 - **Application Type Classification**: Advanced form type detection beyond basic patterns
@@ -225,6 +244,9 @@ docs/
 - **Email Integration**: Import functionality for court correspondence
 
 ### 📅 Planned Features
+- **Case Management Dashboard**: Central hub for managing multiple family court cases with party details and case timelines
+- **Enhanced Case Pre-Input**: Comprehensive case setup with court details, party names, children information, and case history for maximum parsing accuracy
+- **Smart Document Matching**: Use pre-input case data to validate and enhance automatic field population
 - **Batch AI Document Processing**: Dedicated page for AI-powered document analysis and description generation
 - **Advanced Document Intelligence**: Full court order parsing with dates and conditions
 - **Professional Export**: PDF bundle generation with table of contents
