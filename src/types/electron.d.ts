@@ -24,17 +24,6 @@ declare global {
         extractionMethod?: 'OCR';
         error?: string;
       }>;
-      generateDescription: (text: string, filename?: string) => Promise<{
-        success: boolean;
-        description?: string;
-        fallback?: boolean;
-        error?: string;
-      }>;
-      summarizeDocument: (text: string) => Promise<{
-        success: boolean;
-        summary?: string;
-        error?: string;
-      }>;
     };
     electron?: {
       parsePDF: (arrayBuffer: ArrayBuffer) => Promise<{
@@ -54,17 +43,6 @@ declare global {
           error?: string;
         }>;
         originalTextLength?: number;
-      }>;
-      generateDescription: (text: string, filename?: string) => Promise<{
-        success: boolean;
-        description?: string;
-        fallback?: boolean;
-        error?: string;
-      }>;
-      summarize: (text: string) => Promise<{
-        success: boolean;
-        summary?: string;
-        error?: string;
       }>;
     };
   }

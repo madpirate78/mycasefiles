@@ -1,29 +1,5 @@
 import { CourtDocumentData } from './types';
 
-// Type declaration for Electron API
-declare global {
-  interface Window {
-    electronAPI?: {
-      parsePDF: (pdfBuffer: ArrayBuffer) => Promise<{
-        success: boolean;
-        text?: string;
-        pages?: number;
-        error?: string;
-      }>;
-      generateDescription: (text: string, filename?: string) => Promise<{
-        success: boolean;
-        description?: string;
-        fallback?: boolean;
-        error?: string;
-      }>;
-      summarizeDocument: (text: string) => Promise<{
-        success: boolean;
-        summary?: string;
-        error?: string;
-      }>;
-    };
-  }
-}
 
 export class PDFContentParser {
   private patterns = {

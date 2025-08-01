@@ -2,7 +2,7 @@
 
 ⚠️ **DESKTOP APPLICATION ONLY** - This app requires Electron for PDF text extraction and must be run as a desktop application. Browser mode has limited functionality and is not recommended for production use.
 
-A comprehensive legal case management desktop application designed for self-represented litigants and legal professionals. Built with React, TypeScript, and Electron, featuring advanced PDF document organization, intelligent text extraction, automated metadata population for UK family court documents, and local AI-powered document analysis.
+A comprehensive legal case management desktop application designed for self-represented litigants and legal professionals. Built with React, TypeScript, and Electron, featuring advanced PDF document organization, intelligent text extraction, automated metadata population for UK family court documents, and manual OCR for scanned documents.
 
 ## 🎯 Current Features
 
@@ -24,12 +24,10 @@ A comprehensive legal case management desktop application designed for self-repr
 - **Carousel Navigation**: Floating navigation buttons around PDF for intuitive page control
 - **Full-Screen PDF View**: Maximized PDF preview area (95vw × 90vh) with controls in right panel
 
-### AI Intelligence
-- **Local LLM Integration**: On-device Transformers.js model for privacy and offline use
-- **Batch Processing Architecture**: AI document analysis planned as separate batch processing feature
-- **Legal Context Awareness**: Model trained on legal document patterns for accurate legal document analysis
-- **Privacy-First Design**: All AI processing happens locally, no data sent to external services
-- **~250MB Model Size**: Distilbart-cnn-6-6 model available for future batch processing implementation
+### OCR & Text Processing
+- **Manual OCR Control**: User-triggered OCR for scanned PDFs with visual feedback and confidence scoring
+- **Tesseract.js Integration**: High-quality text extraction from scanned documents
+- **PDF Text Extraction**: Direct text extraction from digital PDFs using pdf-parse
 
 ### Desktop Experience
 - **Native Desktop App**: Electron wrapper providing full Node.js capabilities
@@ -176,12 +174,11 @@ docs/
 - **Name Formatting**: Intelligent cleaning and formatting (Mr/Mrs/Ms + Initial/First + Surname)
 - **Family Court References**: Perfect XX##X##### pattern matching (e.g., AB12C34567)
 
-### AI & Machine Learning
-- **Transformers.js**: JavaScript implementation of Hugging Face Transformers
-- **Local Model**: Distilbart-cnn-6-6 for document summarization
-- **ONNX Runtime**: Optimized model inference for fast performance
-- **Automatic Caching**: Models download once (~250MB) and cache locally
-- **Privacy-First**: All AI processing happens on-device, no data sent to cloud
+### OCR Technology
+- **Tesseract.js**: Advanced OCR engine for text extraction from scanned documents
+- **Confidence Scoring**: Real-time feedback on OCR accuracy
+- **Multi-page Processing**: Handles complex legal documents with multiple pages
+- **High Resolution Support**: Optimized for high-quality document scanning
 
 ### Data Management
 - **IndexedDB**: Browser-native storage for documents and metadata
@@ -234,7 +231,6 @@ docs/
 - **UK Date Formatting**: DD/MM/YYYY date inputs and "March 5, 2025" display format throughout ✅ **TESTED & WORKING**
 - **Browser Mode Prevention**: Comprehensive warnings against browser-only usage with runtime detection ✅ **TESTED & WORKING**
 - **Professional Menu System**: Custom legal document management menus with keyboard shortcuts ✅ **WORKING**
-- **Local AI Framework**: Transformers.js infrastructure ready for future batch document processing ✅ **READY FOR IMPLEMENTATION**
 - **Dynamic Document Organization**: Section-specific metadata fields for UK family court structure
 - **Carousel PDF Navigation**: Floating buttons around PDF for intuitive page control
 - **Full-Screen PDF View**: Maximized preview area with controls panel layout
@@ -254,7 +250,7 @@ docs/
 - **Case Management Dashboard**: Central hub for managing multiple family court cases with party details and case timelines
 - **Enhanced Case Pre-Input**: Comprehensive case setup with court details, party names, children information, and case history for maximum parsing accuracy
 - **Smart Document Matching**: Use pre-input case data to validate and enhance automatic field population
-- **Batch AI Document Processing**: Dedicated page for AI-powered document analysis and description generation
+- **Advanced Document Processing**: Enhanced metadata extraction and organization features
 - **Advanced Document Intelligence**: Full court order parsing with dates and conditions
 - **Professional Export**: PDF bundle generation with table of contents
 - **Search & Filter**: Advanced search across document text content
@@ -293,7 +289,6 @@ docs/
 - **[UI Specification](docs/UI_SPEC.md)** - Complete design system and user experience guidelines
 - **[PDF Processing Guide](docs/react_PDF.md)** - Technical notes on PDF handling and rendering
 - **[Document Parser Guide](docs/DOC_PARSER.md)** - PDF text extraction patterns and algorithms
-- **[Local AI Guide](docs/LOCAL_LLM.md)** - Local language model integration and setup
 - **[CLAUDE.md](CLAUDE.md)** - Development configuration and project context
 
 ## 🤝 Contributing
@@ -317,4 +312,4 @@ This project is proprietary software designed for legal document management.
 
 ---
 
-**Built with React, TypeScript, Electron, intelligent PDF parsing, and local AI for professional UK family court document management.**
+**Built with React, TypeScript, Electron, intelligent PDF parsing, and OCR technology for professional UK family court document management.**
