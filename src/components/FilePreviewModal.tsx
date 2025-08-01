@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import PDFRenderer from './PDFRenderer';
+import { getSuggestedMetadata, extractFromPDF } from '../services/documentParser';
 
 interface FilePreviewModalProps {
   file: StoredFile | null;
@@ -40,6 +41,68 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     description: ''
   });
 
+  // Auto-populate metadata when file changes
+  useEffect(() => {
+    const populateMetadata = async () => {
+      if (file) {
+        console.log('Auto-populating metadata for file:', file.name);
+        
+        // Start with filename-based metadata
+        const suggestedMetadata = getSuggestedMetadata(file.name);
+        console.log('Suggested metadata from filename:', suggestedMetadata);
+        
+        // Try to extract additional info from PDF content
+        let pdfData = null;
+        if (file.type.includes('pdf') && file.data) {
+          try {
+            console.log('Extracting from PDF content...');
+            // Convert File to ArrayBuffer
+            const arrayBuffer = await file.data.arrayBuffer();
+            pdfData = await extractFromPDF(arrayBuffer);
+            console.log('PDF extracted data:', pdfData);
+          } catch (error) {
+            console.error('PDF extraction failed:', error);
+          }
+        }
+        
+        // Merge filename and PDF data (filename takes priority for existing fields)
+        const finalMetadata: FileMetadata = {
+          name: file.name,
+          section: suggestedMetadata.section || 'other',
+          description: '',
+          ...suggestedMetadata
+        };
+
+        // Add PDF-extracted data if not already present from filename
+        if (pdfData) {
+          if (!finalMetadata.reference && !finalMetadata.courtReference && pdfData.caseNumber) {
+            finalMetadata.reference = pdfData.caseNumber;
+            finalMetadata.courtReference = pdfData.caseNumber;
+          }
+          if (!finalMetadata.judgeName && pdfData.judgeName) {
+            finalMetadata.judgeName = pdfData.judgeName;
+          }
+          if (!finalMetadata.documentType && pdfData.documentType) {
+            // Map PDF document type to form document type
+            if (pdfData.documentType === 'order') {
+              if (finalMetadata.section === 'child_applications') {
+                finalMetadata.documentType = 'interim_order';
+              } else if (finalMetadata.section === 'financial_applications') {
+                finalMetadata.documentType = 'financial_order';
+              }
+            }
+            // For applications, filename parsing is usually better
+          }
+        }
+
+        console.log('Final merged metadata:', finalMetadata);
+        setMetadata(finalMetadata);
+      }
+    };
+
+    populateMetadata();
+  }, [file]);
+
   const sectionConfigs: SectionConfig[] = [
     {
       id: 'preliminary',
@@ -47,10 +110,12 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       fields: [
         { key: 'documentType', label: 'Document Type', type: 'select', required: true,
           options: [
-            { value: 'application', label: 'Application Form' },
-            { value: 'checklist', label: 'Checklist' },
-            { value: 'notice', label: 'Notice' },
-            { value: 'filing', label: 'Filing Document' }
+            { value: 'case_summary', label: 'Case Summary' },
+            { value: 'statement_of_issues', label: 'Statement of Issues' },
+            { value: 'position_statements', label: 'Position Statements' },
+            { value: 'chronology', label: 'Chronology' },
+            { value: 'skeleton_arguments', label: 'Skeleton Arguments' },
+            { value: 'list_essential_reading', label: 'List of Essential Reading' }
           ]
         },
         { key: 'date', label: 'Date Filed', type: 'date' },
@@ -65,24 +130,58 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       }
     },
     {
-      id: 'applications',
-      label: 'Applications and Orders',
+      id: 'child_applications',
+      label: 'Child Matters - Applications and Orders',
       fields: [
-        { key: 'orderReference', label: 'Order Reference', type: 'text', placeholder: 'e.g., FL401', required: true },
-        { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., Smith' },
-        { key: 'date', label: 'Date', type: 'date', required: true },
-        { key: 'orderType', label: 'Order Type', type: 'select',
+        { key: 'documentType', label: 'Document Type', type: 'select', required: true,
           options: [
-            { value: 'interim', label: 'Interim Order' },
-            { value: 'final', label: 'Final Order' },
-            { value: 'application', label: 'Application' },
-            { value: 'directions', label: 'Directions Order' }
+            { value: 'c100', label: 'C100 - Child Arrangements Application' },
+            { value: 'fl401', label: 'FL401 - Non-molestation Application' },
+            { value: 'fl402', label: 'FL402 - Occupation Order Application' },
+            { value: 'c1', label: 'C1 - Application for Order' },
+            { value: 'other_child_application', label: 'Other Child Application' },
+            { value: 'interim_order', label: 'Interim Order' },
+            { value: 'final_order', label: 'Final Order' },
+            { value: 'directions_order', label: 'Directions Order' },
+            { value: 'consent_order', label: 'Consent Order' }
           ]
-        }
+        },
+        { key: 'reference', label: 'Reference', type: 'text', placeholder: 'e.g., FL401, C100', required: true },
+        { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., Smith' },
+        { key: 'date', label: 'Date', type: 'date', required: true }
       ],
       filenameFormat: (meta) => {
-        const parts = ['order'];
-        if (meta.orderReference) parts.push(meta.orderReference.replace(/\s+/g, '_'));
+        const parts = ['child', meta.documentType || 'document'];
+        if (meta.reference) parts.push(meta.reference.replace(/\s+/g, '_'));
+        if (meta.judgeName) parts.push(meta.judgeName.replace(/\s+/g, '_'));
+        if (meta.date) parts.push(meta.date);
+        return parts.join('_');
+      }
+    },
+    {
+      id: 'financial_applications',
+      label: 'Financial Matters - Applications and Orders',
+      fields: [
+        { key: 'documentType', label: 'Document Type', type: 'select', required: true,
+          options: [
+            { value: 'form_a', label: 'Form A - Financial Application' },
+            { value: 'form_e', label: 'Form E - Financial Statement' },
+            { value: 'd81', label: 'D81 - Statement of Information' },
+            { value: 'financial_dispute_resolution', label: 'FDR - Financial Dispute Resolution' },
+            { value: 'other_financial_application', label: 'Other Financial Application' },
+            { value: 'financial_order', label: 'Financial Order' },
+            { value: 'consent_order', label: 'Consent Order' },
+            { value: 'clean_break_order', label: 'Clean Break Order' },
+            { value: 'pension_sharing_order', label: 'Pension Sharing Order' }
+          ]
+        },
+        { key: 'reference', label: 'Reference', type: 'text', placeholder: 'e.g., FA-2024-001', required: true },
+        { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., Smith' },
+        { key: 'date', label: 'Date', type: 'date', required: true }
+      ],
+      filenameFormat: (meta) => {
+        const parts = ['financial', meta.documentType || 'document'];
+        if (meta.reference) parts.push(meta.reference.replace(/\s+/g, '_'));
         if (meta.judgeName) parts.push(meta.judgeName.replace(/\s+/g, '_'));
         if (meta.date) parts.push(meta.date);
         return parts.join('_');
@@ -92,23 +191,14 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       id: 'statements',
       label: 'Statements and Affidavits',
       fields: [
-        { key: 'statementType', label: 'Statement Type', type: 'select', required: true,
-          options: [
-            { value: 'witness', label: 'Witness Statement' },
-            { value: 'position', label: 'Position Statement' },
-            { value: 'affidavit', label: 'Affidavit' },
-            { value: 'supporting', label: 'Supporting Statement' }
-          ]
-        },
         { key: 'personName', label: 'Person Name', type: 'text', placeholder: 'Name of person making statement', required: true },
-        { key: 'date', label: 'Date', type: 'date' },
-        { key: 'statementNumber', label: 'Statement Number', type: 'text', placeholder: 'e.g., 1st, 2nd' }
+        { key: 'courtReference', label: 'Court Reference Number', type: 'text', placeholder: 'e.g., FL401, C100', required: true },
+        { key: 'date', label: 'Date', type: 'date' }
       ],
       filenameFormat: (meta) => {
         const parts = ['statement'];
-        if (meta.statementType) parts.push(meta.statementType);
         if (meta.personName) parts.push(meta.personName.replace(/\s+/g, '_'));
-        if (meta.statementNumber) parts.push(meta.statementNumber);
+        if (meta.courtReference) parts.push(meta.courtReference);
         if (meta.date) parts.push(meta.date);
         return parts.join('_');
       }
@@ -143,17 +233,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       fields: [
         { key: 'expertType', label: 'Expert Type', type: 'select', required: true,
           options: [
-            { value: 'psychologist', label: 'Psychologist' },
+            { value: 'cafcass', label: 'CAFCASS' },
+            { value: 'social_services', label: 'Social Services' },
+            { value: 'police', label: 'Police' },
+            { value: 'counsellor', label: 'Counsellor' },
             { value: 'psychiatrist', label: 'Psychiatrist' },
-            { value: 'social_worker', label: 'Social Worker' },
+            { value: 'psychologist', label: 'Psychologist' },
             { value: 'guardian', label: 'Guardian ad Litem' },
-            { value: 'medical', label: 'Medical Expert' },
             { value: 'other', label: 'Other Expert' }
           ]
         },
         { key: 'expertName', label: 'Expert Name', type: 'text', placeholder: 'Expert\'s name', required: true },
-        { key: 'reportDate', label: 'Report Date', type: 'date' },
-        { key: 'reportType', label: 'Report Type', type: 'text', placeholder: 'e.g., Assessment, Evaluation' }
+        { key: 'reportDate', label: 'Report Date', type: 'date' }
       ],
       filenameFormat: (meta) => {
         const parts = ['expert'];
@@ -181,7 +272,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     }
   ];
 
-  const sections = sectionConfigs.map(config => ({ id: config.id, label: config.label }));
+  const sections = [
+    { id: 'preliminary', label: 'Preliminary Documents' },
+    { id: 'child_applications', label: 'Child Matters - Applications and Orders' },
+    { id: 'financial_applications', label: 'Financial Matters - Applications and Orders' },
+    { id: 'statements', label: 'Statements and Affidavits' },
+    { id: 'care', label: 'Care Plans' },
+    { id: 'experts', label: 'Experts\' Reports' },
+    { id: 'other', label: 'Other Documents' }
+  ];
   const currentSectionConfig = sectionConfigs.find(config => config.id === metadata.section);
 
   if (!isOpen || !file) return null;
@@ -253,8 +352,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       const extension = file.name.split('.').pop();
       const baseName = currentSectionConfig.filenameFormat(metadata);
       newFilename = `${baseName}.${extension}`;
-    } else if (metadata.name !== file.name) {
-      newFilename = metadata.name;
     }
 
     onSave(file.id!, { ...metadata, name: newFilename });
@@ -297,13 +394,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
               <select 
                 value={metadata.section} 
                 onChange={(e) => {
-                  // Clear existing dynamic fields when section changes
-                  const newMetadata: FileMetadata = {
-                    name: metadata.name,
-                    section: e.target.value,
-                    description: metadata.description
-                  };
-                  setMetadata(newMetadata);
+                  // Preserve metadata but update section
+                  setMetadata(prev => ({ ...prev, section: e.target.value }));
                 }}
                 className="form-select"
               >
@@ -337,20 +429,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
               />
             </div>
 
-            <div className="form-group">
-              <label>Filename</label>
-              <input
-                type="text"
-                value={metadata.name}
-                onChange={(e) => setMetadata({...metadata, name: e.target.value})}
-                className="form-input"
-              />
-              {currentSectionConfig?.filenameFormat && (
-                <p className="filename-hint">
-                  Suggested filename: {currentSectionConfig.filenameFormat(metadata)}.{file.name.split('.').pop()}
-                </p>
-              )}
-            </div>
 
             <div className="form-actions">
               <button className="btn secondary" onClick={onClose}>Cancel</button>

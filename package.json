@@ -7,6 +7,7 @@
     "@testing-library/jest-dom": "^6.6.4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "electron-is-dev": "^3.0.1",
     "eml-parser": "^2.0.4",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.4.54",
@@ -23,7 +24,11 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "setup-pdfjs": "node scripts/setup-pdfjs.js",
-    "postinstall": "npm run setup-pdfjs"
+    "postinstall": "npm run setup-pdfjs",
+    "electron": "electron public/electron.js",
+    "electron-dev": "ELECTRON_IS_DEV=true electron public/electron.js",
+    "build-electron": "npm run build && electron-builder",
+    "dist": "npm run build && electron-builder --publish=never"
   },
   "eslintConfig": {
     "extends": [
@@ -47,6 +52,32 @@
     "@types/node": "^24.1.0",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
+    "electron": "^37.2.5",
+    "electron-builder": "^26.0.12",
+    "pdf-parse": "^1.1.1",
     "typescript": "^4.9.5"
+  },
+  "main": "public/electron.js",
+  "build": {
+    "appId": "com.mycasefiles.app",
+    "productName": "My Case Files",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "build/**/*",
+      "public/electron.js",
+      "public/preload.js",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
