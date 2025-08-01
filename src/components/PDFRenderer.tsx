@@ -163,6 +163,30 @@ const PDFRenderer: React.FC<PDFRendererProps> = ({ file, onLoad, onError, showNa
       )}
 
       <div className="pdf-container">
+        {/* Left Navigation - First Page */}
+        {numPages > 1 && !isLoading && (
+          <button 
+            onClick={goToFirstPage} 
+            disabled={pageNumber === 1}
+            className="pdf-nav-btn pdf-nav-first"
+            title="First page"
+          >
+            ⏮
+          </button>
+        )}
+        
+        {/* Left Navigation - Previous Page */}
+        {numPages > 1 && !isLoading && (
+          <button 
+            onClick={goToPreviousPage} 
+            disabled={pageNumber === 1}
+            className="pdf-nav-btn pdf-nav-prev"
+            title="Previous page"
+          >
+            ◀
+          </button>
+        )}
+
         <Document
           file={fileUrl}
           onLoadSuccess={onDocumentLoadSuccess}
@@ -192,6 +216,30 @@ const PDFRenderer: React.FC<PDFRendererProps> = ({ file, onLoad, onError, showNa
             />
           )}
         </Document>
+
+        {/* Right Navigation - Next Page */}
+        {numPages > 1 && !isLoading && (
+          <button 
+            onClick={goToNextPage} 
+            disabled={pageNumber === numPages}
+            className="pdf-nav-btn pdf-nav-next"
+            title="Next page"
+          >
+            ▶
+          </button>
+        )}
+        
+        {/* Right Navigation - Last Page */}
+        {numPages > 1 && !isLoading && (
+          <button 
+            onClick={goToLastPage} 
+            disabled={pageNumber === numPages}
+            className="pdf-nav-btn pdf-nav-last"
+            title="Last page"
+          >
+            ⏭
+          </button>
+        )}
       </div>
 
       {numPages > 0 && !isLoading && numPages === 1 && (
