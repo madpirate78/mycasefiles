@@ -11,7 +11,7 @@ const BundleList: React.FC<BundleListProps> = ({ uploadedFiles }) => {
     {
       id: 1,
       name: 'Initial Court Filing - March 2024',
-      createdDate: 'March 10, 2024',
+      createdDate: 'March 5, 2025',
       documentCount: 15,
       status: 'completed',
       watermarked: true
@@ -19,7 +19,7 @@ const BundleList: React.FC<BundleListProps> = ({ uploadedFiles }) => {
     {
       id: 2,
       name: 'Financial Disclosure Bundle',
-      createdDate: 'March 5, 2024',
+      createdDate: 'March 5, 2025',
       documentCount: 8,
       status: 'draft',
       watermarked: true

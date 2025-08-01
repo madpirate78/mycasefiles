@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import ElectronPDFRenderer from './ElectronPDFRenderer';
 import { getSuggestedMetadata, extractFromPDF } from '../services/documentParser';
+import { formatDateForInput, parseUKDate } from '../utils/dateUtils';
 
 interface FilePreviewModalProps {
   file: StoredFile | null;
@@ -41,6 +42,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     description: ''
   });
   const [pdfText, setPdfText] = useState<string>('');
+  const [ocrStatus, setOcrStatus] = useState<{
+    isScanned: boolean;
+    isProcessing: boolean;
+    hasRun: boolean;
+    textLength: number;
+    confidence?: number;
+  }>({
+    isScanned: false,
+    isProcessing: false, 
+    hasRun: false,
+    textLength: 0
+  });
 
   // Auto-populate metadata when file changes
   useEffect(() => {
@@ -51,6 +64,12 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       description: ''
     });
     setPdfText('');
+    setOcrStatus({
+      isScanned: false,
+      isProcessing: false,
+      hasRun: false,
+      textLength: 0
+    });
     
     const populateMetadata = async () => {
       if (file) {
@@ -78,12 +97,31 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             const arrayBuffer = await file.data.arrayBuffer();
             console.log('✅ ArrayBuffer created, size:', arrayBuffer.byteLength);
             
-            // Get raw text from PDF via Electron API (for AI description)
-            if (window.electron && window.electron.parsePDF) {
-              const pdfResult = await window.electron.parsePDF(arrayBuffer);
+            // Get raw text from PDF via Electron API (without OCR initially)
+            if (window.electronAPI && window.electronAPI.parsePDF) {
+              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
               if (pdfResult.success && pdfResult.text) {
                 pdfText = pdfResult.text;
-                console.log('📝 Raw PDF text extracted, length:', pdfText.length);
+                const method = (pdfResult as any).extractionMethod || 'PDF_PARSE';
+                const textLength = pdfResult.text.length;
+                
+                // Check if this is likely a scanned PDF
+                const isScanned = (pdfResult as any).isScanned || 
+                                 textLength < 50 || 
+                                 ((pdfResult as any).info?.Producer && (pdfResult as any).info.Producer.includes('EPSON Scan'));
+                
+                setOcrStatus({
+                  isScanned,
+                  isProcessing: false,
+                  hasRun: method === 'OCR',
+                  textLength,
+                  confidence: undefined
+                });
+                
+                console.log(`📝 Text extracted via ${method}, length: ${textLength}`);
+                if (isScanned && method !== 'OCR') {
+                  console.log('🔍 Scanned PDF detected - OCR available');
+                }
               }
             }
             
@@ -156,6 +194,84 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
     populateMetadata();
   }, [file]);
+
+  // Manual OCR function
+  const runOCR = async () => {
+    if (!file || !file.data || !window.electronAPI) return;
+    
+    setOcrStatus(prev => ({ ...prev, isProcessing: true }));
+    
+    try {
+      console.log('🔍 Starting manual OCR...');
+      const arrayBuffer = await file.data.arrayBuffer();
+      const ocrResult = await (window.electronAPI as any).ocrPDF(arrayBuffer);
+      
+      if (ocrResult.success && ocrResult.text) {
+        console.log(`✅ OCR completed: ${ocrResult.text.length} chars, ${ocrResult.confidence?.toFixed(1)}% confidence`);
+        
+        // Update OCR status
+        setOcrStatus(prev => ({
+          ...prev,
+          isProcessing: false,
+          hasRun: true,
+          textLength: ocrResult.text.length,
+          confidence: ocrResult.confidence
+        }));
+        
+        // Store OCR text for parsing
+        setPdfText(ocrResult.text);
+        
+        // Re-run extraction with OCR text
+        try {
+          // Import the parser directly to use OCR text instead of re-calling Electron
+          const { PDFContentParser } = await import('../services/documentParser/pdfContentParser');
+          const parser = new PDFContentParser();
+          const pdfData = parser.extractFromText(ocrResult.text);
+          
+          console.log('📊 OCR-based extraction result:', pdfData);
+          
+          if (pdfData) {
+            // Apply extracted data to metadata
+            const updatedMetadata = { ...metadata };
+            if (pdfData.caseNumber && !updatedMetadata.reference) {
+              updatedMetadata.reference = pdfData.caseNumber;
+            }
+            if (pdfData.caseNumber && !updatedMetadata.courtReference) {  
+              updatedMetadata.courtReference = pdfData.caseNumber;
+            }
+            if (pdfData.judgeName) {
+              updatedMetadata.judgeName = pdfData.judgeName;
+            }
+            if (pdfData.documentType === 'statement') {
+              updatedMetadata.section = 'statements';
+              if (pdfData.personName) {
+                updatedMetadata.personName = pdfData.personName;
+              }
+            }
+            setMetadata(updatedMetadata);
+            console.log('📊 Metadata updated with OCR results:', updatedMetadata);
+          }
+        } catch (extractError) {
+          console.error('⚠️ Pattern extraction failed after OCR:', extractError);
+        }
+        
+      } else {
+        console.error('❌ OCR failed:', ocrResult.error);
+        setOcrStatus(prev => ({
+          ...prev,
+          isProcessing: false,
+          hasRun: false
+        }));
+      }
+    } catch (error) {
+      console.error('💥 OCR processing failed:', error);
+      setOcrStatus(prev => ({
+        ...prev,
+        isProcessing: false,
+        hasRun: false
+      }));
+    }
+  };
 
   const sectionConfigs: SectionConfig[] = [
     {
@@ -375,14 +491,48 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           />
         );
       case 'date':
+        // Convert ISO date to UK format for display
+        const formatValueForDisplay = (isoValue: string) => {
+          if (!isoValue) return '';
+          const date = new Date(isoValue);
+          if (isNaN(date.getTime())) return isoValue;
+          const day = date.getDate().toString().padStart(2, '0');
+          const month = (date.getMonth() + 1).toString().padStart(2, '0');
+          const year = date.getFullYear();
+          return `${day}/${month}/${year}`;
+        };
+
+        // Convert UK format to ISO for HTML input
+        const parseUKToISO = (ukValue: string) => {
+          if (!ukValue || ukValue.length < 8) return '';
+          const parts = ukValue.split('/');
+          if (parts.length !== 3) return ukValue;
+          const day = parts[0].padStart(2, '0');
+          const month = parts[1].padStart(2, '0');
+          const year = parts[2];
+          if (year.length === 4 && month.length <= 2 && day.length <= 2) {
+            return `${year}-${month}-${day}`;
+          }
+          return ukValue;
+        };
+
         return (
-          <input
-            type="date"
-            value={value}
-            onChange={(e) => updateMetadata(field.key, e.target.value)}
-            className="form-input"
-            required={field.required}
-          />
+          <div className="uk-date-input">
+            <input
+              type="text"
+              value={value ? formatValueForDisplay(value) : ''}
+              onChange={(e) => {
+                const ukFormat = e.target.value;
+                const isoFormat = parseUKToISO(ukFormat);
+                updateMetadata(field.key, isoFormat);
+              }}
+              placeholder="DD/MM/YYYY"
+              className="form-input"
+              required={field.required}
+              pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
+              title="Enter date in DD/MM/YYYY format"
+            />
+          </div>
         );
       default: // text
         return (
@@ -471,6 +621,45 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
                 {renderField(field)}
               </div>
             ))}
+
+            {/* OCR Status and Control */}
+            {ocrStatus.isScanned && (
+              <div className="form-group">
+                <label>Document Scanning</label>
+                <div className="ocr-status-container">
+                  {!ocrStatus.hasRun && !ocrStatus.isProcessing && (
+                    <div className="ocr-prompt">
+                      <p className="ocr-detected">📄 Scanned document detected ({ocrStatus.textLength} chars extracted)</p>
+                      <button 
+                        type="button"
+                        className="btn secondary"
+                        onClick={runOCR}
+                        style={{ marginTop: '8px' }}
+                      >
+                        🔍 Run OCR to Extract Full Text
+                      </button>
+                      <p className="ocr-note">OCR will analyze the scanned image to extract readable text. This may take 10-15 seconds.</p>
+                    </div>
+                  )}
+                  
+                  {ocrStatus.isProcessing && (
+                    <div className="ocr-processing">
+                      <p className="ocr-status">🔄 Running OCR analysis...</p>
+                      <div className="ocr-spinner">Processing scanned document, please wait...</div>
+                    </div>
+                  )}
+                  
+                  {ocrStatus.hasRun && !ocrStatus.isProcessing && (
+                    <div className="ocr-complete">
+                      <p className="ocr-success">
+                        ✅ OCR completed: {ocrStatus.textLength} characters extracted
+                        {ocrStatus.confidence && ` (${ocrStatus.confidence.toFixed(1)}% confidence)`}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="form-group">
               <label>Description</label>

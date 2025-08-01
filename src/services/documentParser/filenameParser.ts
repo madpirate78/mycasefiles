@@ -123,7 +123,7 @@ export class FilenameParser {
       
       return new Date(year, month, day);
     } else if (/^\d{4}\/\d{1,2}\/\d{1,2}$/.test(normalized)) {
-      // YYYY/MM/DD
+      // YYYY/MM/DD (ISO format)
       const parts = normalized.split('/');
       return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
     }

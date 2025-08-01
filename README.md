@@ -1,5 +1,7 @@
 # MyCaseFiles - Desktop Legal Document Management System
 
+⚠️ **DESKTOP APPLICATION ONLY** - This app requires Electron for PDF text extraction and must be run as a desktop application. Browser mode has limited functionality and is not recommended for production use.
+
 A comprehensive legal case management desktop application designed for self-represented litigants and legal professionals. Built with React, TypeScript, and Electron, featuring advanced PDF document organization, intelligent text extraction, automated metadata population for UK family court documents, and local AI-powered document analysis.
 
 ## 🎯 Current Features
@@ -65,6 +67,8 @@ A comprehensive legal case management desktop application designed for self-repr
    ```
    Builds the React app and launches the Electron desktop application.
 
+   ⚠️ **IMPORTANT**: This app must be run in Electron mode for full functionality including PDF text extraction and OCR capabilities.
+
 ### System Setup (Linux/WSL)
 If Electron fails to launch, install required system libraries:
 ```bash
@@ -85,18 +89,18 @@ npm run electron
 ```
 Launches Electron with existing build - faster but may serve cached code.
 
-**React Development Server** (limited PDF parsing)
+**React Development Server** ⚠️ **NOT RECOMMENDED** (severely limited functionality)
 ```bash
 npm start
 ```
-Opens [http://localhost:3000](http://localhost:3000) for UI development only.
+Opens [http://localhost:3000](http://localhost:3000) for UI development only. **WARNING**: Browser mode cannot perform PDF text extraction, OCR, or document parsing. Use only for UI styling work.
 
 ### Available Scripts
 
 **Development & Testing:**
 - **`npm run dev-electron`** - **RECOMMENDED** Build and launch with fresh code (no caching issues)
 - **`npm run electron`** - Quick launch (may use cached build)
-- **`npm start`** - React development server (web mode, limited PDF parsing)
+- **`npm start`** - ⚠️ React development server (web mode, **severely limited** - no PDF parsing, no OCR)
 - **`npm run electron-dev`** - Electron development with hot reload (connects to React dev server)
 
 **Production:**
@@ -221,11 +225,14 @@ docs/
 ### ✅ Completed Features
 - **Electron Desktop App**: Native desktop application with full Node.js capabilities ✅ **TESTED & WORKING**
 - **PDF Text Extraction**: Automated extraction of court references, judge names, and document types ✅ **TESTED & WORKING**
+- **Manual OCR Control**: User-triggered OCR for scanned PDFs with visual feedback and confidence scoring ✅ **TESTED & WORKING**
 - **Dual-Strategy Parsing**: Filename-first approach with PDF content fallback for optimal accuracy ✅ **TESTED & WORKING**
 - **UK Court Integration**: Pattern recognition for case numbers (AB12C34567), form types (C100, FL401), judge abbreviations (HHJ, DJ, DDJ) ✅ **TESTED & WORKING**
 - **Smart Auto-Population**: Intelligent form field pre-filling works for both text-based and scanned PDFs ✅ **TESTED & WORKING**
 - **Enhanced Statement Processing**: Comprehensive person name extraction from headers, patterns, and signatures ✅ **TESTED & WORKING**
 - **UK Legal Name Formatting**: Proper title and name cleaning (Mr/Mrs/Ms + Initial/First + Surname) ✅ **TESTED & WORKING**
+- **UK Date Formatting**: DD/MM/YYYY date inputs and "March 5, 2025" display format throughout ✅ **TESTED & WORKING**
+- **Browser Mode Prevention**: Comprehensive warnings against browser-only usage with runtime detection ✅ **TESTED & WORKING**
 - **Professional Menu System**: Custom legal document management menus with keyboard shortcuts ✅ **WORKING**
 - **Local AI Framework**: Transformers.js infrastructure ready for future batch document processing ✅ **READY FOR IMPLEMENTATION**
 - **Dynamic Document Organization**: Section-specific metadata fields for UK family court structure
@@ -275,11 +282,11 @@ docs/
 3. **Memory Usage**: Electron apps use more memory than native applications
 
 ### Document Intelligence
-1. **Scanned/Image PDFs**: PDFs without text layers (scanned images) fall back to filename parsing only
+1. **Scanned/Image PDFs**: Manual OCR available for scanned documents with visual feedback and confidence scoring
 2. **Text-Based PDFs**: Modern court PDFs with text layers enable full content extraction
 3. **Complex Layouts**: Some court documents use non-standard layouts that may reduce parsing accuracy
 4. **Case Number Variations**: New case number formats may require pattern updates
-5. **OCR Not Included**: For scanned documents, consider manual entry or external OCR preprocessing
+5. **OCR Processing**: Manual OCR takes 10-15 seconds but provides high-quality text extraction for scanned documents
 
 ## 📚 Documentation
 

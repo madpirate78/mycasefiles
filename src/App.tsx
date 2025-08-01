@@ -12,6 +12,10 @@ type View = 'home' | 'bundles' | 'documents' | 'emails';
 function App() {
   const [currentView, setCurrentView] = useState<View>('home');
   const [uploadedFiles, setUploadedFiles] = useState<StoredFile[]>([]);
+  const [showBrowserWarning, setShowBrowserWarning] = useState<boolean>(false);
+
+  // Check if running in Electron
+  const isElectron = !!(window as any).electronAPI || !!(window as any).require;
 
   const handleFileUpload = async (files: FileList) => {
     console.log("Files uploaded:", files);
@@ -53,13 +57,19 @@ function App() {
   };
 
   useEffect(() => {
+    // Show browser warning if not running in Electron
+    if (!isElectron) {
+      setShowBrowserWarning(true);
+      console.warn('⚠️ Running in browser mode - Limited functionality. PDF text extraction and OCR not available.');
+    }
+
     openDB().then(() => {
       console.log("IndexedDB opened successfully.");
       fetchFilesFromDB();
     }).catch((error) => {
       console.error("Failed to open IndexedDB:", error);
     });
-  }, []);
+  }, [isElectron]);
 
   const renderContent = () => {
     switch (currentView) {
@@ -78,6 +88,20 @@ function App() {
 
   return (
     <div className="app">
+      {showBrowserWarning && (
+        <div className="browser-warning">
+          <div className="warning-content">
+            <strong>⚠️ Limited Browser Mode</strong>
+            <p>
+              This app is designed for desktop use with Electron. PDF text extraction, OCR, and document parsing are not available in browser mode.
+              <br/>
+              <strong>To use full functionality, run:</strong> <code>npm run build && npm run electron</code>
+            </p>
+            <button onClick={() => setShowBrowserWarning(false)}>×</button>
+          </div>
+        </div>
+      )}
+      
       <header className="app-header">
         <div className="logo">MyCaseFiles</div>
         <input 

@@ -34,10 +34,10 @@ export class PDFContentParser {
       /Case\s+no[:\s\.]+([A-Z0-9]+)/i,
       /Case\s+#[:\s]+([A-Z0-9]+)/i,
       
-      // UK Family Court case number patterns - ENHANCED FOR STATEMENTS
-      /([A-Z]{2}\d{2}[A-Z]\d{5})/g,  // Exact pattern: e.g., AB12C34567
-      /([A-Z]{2}\d{2}[A-Z]{1,2}\d{4,5})/g,  // variations
-      /([A-Z]{1,3}\d{2,4}[A-Z]?\d{3,6})/g,  // broader pattern
+      // UK Family Court case number patterns - ENHANCED FOR STATEMENTS (FIXED: removed /g flag)
+      /([A-Z]{2}\d{2}[A-Z]\d{5})/,  // Exact pattern: e.g., AB12C34567
+      /([A-Z]{2}\d{2}[A-Z]{1,2}\d{4,5})/,  // variations
+      /([A-Z]{1,3}\d{2,4}[A-Z]?\d{3,6})/,  // broader pattern
       
       // Statement-specific patterns (look for family court refs anywhere in text)
       /(?:case|matter|ref|reference|proceeding)[s]?[:\s]*([A-Z]{2}\d{2}[A-Z]\d{5})/i,
@@ -217,24 +217,21 @@ export class PDFContentParser {
    * Focus: Court Reference Number, Document Type, Judge Name, and Person Name (for statements)
    */
   extractFromText(pdfText: string): { caseNumber: string | null; documentType: 'order' | 'application' | 'statement' | null; judgeName: string | null; personName?: string | null } {
-    console.log('🔍 Extracting key info from PDF text, length:', pdfText.length);
-    console.log('📃 First 500 chars of PDF text:', pdfText.substring(0, 500));
+    console.log('📄 Parsing document text (', pdfText.length, 'chars)');
     
     // 1. Extract court reference number (MOST IMPORTANT)
     const caseNumber = this.extractCaseNumber(pdfText);
-    console.log('🏛️ Extracted case number:', caseNumber);
 
     // 2. Determine document type (SECOND MOST IMPORTANT)
     const documentType = this.identifyDocumentType(pdfText);
-    console.log('📋 Identified document type:', documentType);
 
     // 3. Extract judge name (THIRD MOST IMPORTANT - for orders)
     const judgeName = this.extractJudgeName(pdfText);
-    console.log('👨‍⚖️ Extracted judge name:', judgeName);
 
     // 4. Extract person name (FOR STATEMENTS - look in first part of document)
     const personName = this.extractStatementPersonName(pdfText);
-    console.log('👤 Extracted person name (statement):', personName);
+
+    console.log('📊 Extracted:', { caseNumber, documentType, judgeName, personName });
 
     return {
       caseNumber,
@@ -248,27 +245,17 @@ export class PDFContentParser {
    * Extract case number with improved patterns using multi-pattern approach
    */
   private extractCaseNumber(text: string): string | null {
-    console.log('🔎 Testing case number patterns...');
     // Try each pattern in order of specificity
     for (let i = 0; i < this.patterns.caseNumber.length; i++) {
       const pattern = this.patterns.caseNumber[i];
-      console.log(`Pattern ${i + 1}:`, pattern.toString());
       const match = text.match(pattern);
-      if (match) {
-        console.log(`✅ Pattern ${i + 1} matched:`, match);
-        if (match[1]) {
-          const caseNum = match[1].trim().toUpperCase();
-          console.log('🔍 Extracted case number candidate:', caseNum);
-          // Validate it looks like a UK court reference
-          if (this.isValidCaseNumber(caseNum)) {
-            console.log('✅ Valid case number found:', caseNum);
-            return caseNum;
-          } else {
-            console.log('❌ Invalid case number format:', caseNum);
-          }
+      if (match && match[1]) {
+        const caseNum = match[1].trim().toUpperCase();
+        // Validate it looks like a UK court reference
+        if (this.isValidCaseNumber(caseNum)) {
+          console.log('✅ Case number extracted:', caseNum);
+          return caseNum;
         }
-      } else {
-        console.log(`❌ Pattern ${i + 1} no match`);
       }
     }
     return null;
@@ -408,13 +395,17 @@ export class PDFContentParser {
               return new Date(year, month, day);
             }
           } else if (dateStr.includes('/') || dateStr.includes('.')) {
-            // Numeric date format
+            // Numeric date format - prioritize UK format (DD/MM/YYYY)
             if (match[3].length === 4) {
-              // DD/MM/YYYY
+              // DD/MM/YYYY (UK format)
               return new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
-            } else {
-              // YYYY/MM/DD
+            } else if (match[1].length === 4) {
+              // YYYY/MM/DD (ISO format)
               return new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+            } else {
+              // MM/DD/YY or DD/MM/YY - assume UK format (DD/MM/YY)
+              const year = parseInt(match[3]) + (parseInt(match[3]) < 50 ? 2000 : 1900);
+              return new Date(year, parseInt(match[2]) - 1, parseInt(match[1]));
             }
           }
         } catch (e) {
@@ -444,66 +435,43 @@ export class PDFContentParser {
    * Extract person name from statement documents - look in first 800 chars and last 500 chars (signature)
    */
   private extractStatementPersonName(text: string): string | null {
-    console.log('👤 Looking for statement person name...');
-    
     // Focus on first 800 characters where names typically appear in headers
     const firstPart = text.substring(0, 800);
-    console.log('🔎 Searching in first 800 chars:', firstPart.substring(0, 200) + '...');
     
     // Try each pattern specifically designed for statement headers
     for (let i = 0; i < this.patterns.statementPersonName.length; i++) {
       const pattern = this.patterns.statementPersonName[i];
-      console.log(`👤 Header Pattern ${i + 1}:`, pattern.toString());
-      
       const match = firstPart.match(pattern);
       if (match && match[1]) {
         const name = match[1].trim();
-        console.log(`✅ Header Pattern ${i + 1} matched:`, name);
         
         // Validate it looks like a real name
         if (this.isValidPersonName(name)) {
           const cleanedName = this.cleanPersonName(name);
-          console.log('✅ Valid person name found in header, cleaned:', cleanedName);
+          console.log('🔍 Person name found:', cleanedName);
           return cleanedName;
-        } else {
-          console.log('❌ Invalid person name format:', name);
         }
-      } else {
-        console.log(`❌ Header Pattern ${i + 1} no match`);
       }
     }
     
     // If no name found in header, check signature area at end
-    console.log('🔎 No name in header, checking signature area...');
     const lastPart = text.substring(Math.max(0, text.length - 500));
-    console.log('📝 Searching in last 500 chars:', lastPart.substring(0, 200) + '...');
     
     // Try signature patterns
     for (let i = 0; i < this.patterns.signaturePatterns.length; i++) {
       const pattern = this.patterns.signaturePatterns[i];
-      console.log(`✍️ Signature Pattern ${i + 1}:`, pattern.toString());
-      
       const match = lastPart.match(pattern);
       if (match) {
         // For signature patterns, name might be in match[1] or match[2] depending on pattern
         const name = (match[1] || match[2] || '').trim();
-        if (name) {
-          console.log(`✅ Signature Pattern ${i + 1} matched:`, name);
-          
-          if (this.isValidPersonName(name)) {
-            const cleanedName = this.cleanPersonName(name);
-            console.log('✅ Valid person name found in signature, cleaned:', cleanedName);
-            return cleanedName;
-          } else {
-            console.log('❌ Invalid signature name format:', name);
-          }
+        if (name && this.isValidPersonName(name)) {
+          const cleanedName = this.cleanPersonName(name);
+          console.log('🔍 Person name found in signature:', cleanedName);
+          return cleanedName;
         }
-      } else {
-        console.log(`❌ Signature Pattern ${i + 1} no match`);
       }
     }
     
-    console.log('❌ No person name found in statement or signature');
     return null;
   }
 
@@ -543,8 +511,6 @@ export class PDFContentParser {
    * Clean person name to format like "Mr First Surname" or "Mr Initial Surname"
    */
   private cleanPersonName(name: string): string {
-    console.log('🧹 Cleaning person name:', name);
-    
     let cleaned = name.trim();
     
     // Remove common prefixes that aren't titles
@@ -630,7 +596,6 @@ export class PDFContentParser {
       result += ' ' + firstName + middleInitial + ' ' + lastName;
     }
     
-    console.log('✨ Cleaned name result:', result);
     return result;
   }
 

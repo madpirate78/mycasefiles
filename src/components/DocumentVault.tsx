@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StoredFile } from '../services/indexedDBService';
+import { formatStoredDate } from '../utils/dateUtils';
 
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
@@ -77,8 +78,8 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                 </div>
                 <div className="doc-details">
                   <h4>{file.name}</h4>
-                  <p className="doc-description">Financial statement showing account activity for the period January to March 2024</p>
-                  <p className="doc-meta">Added on March 15, 2024</p>
+                  <p className="doc-description">{(file as any).description || 'No description available'}</p>
+                  <p className="doc-meta">Added on {formatStoredDate(file.addedDate) || 'Unknown date'}</p>
                 </div>
                 <div className="doc-actions">
                   <button className="action-btn small">Add to Bundle</button>
