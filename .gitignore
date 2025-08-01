@@ -21,3 +21,23 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Development configuration
+CLAUDE.md
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+Thumbs.db
+*.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+
+# PDF.js local assets (regenerated via npm script)
+/public/pdfjs-dist/

@@ -1,70 +1,186 @@
-# Getting Started with Create React App
+# MyCaseFiles - Legal Document Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive legal case management application designed for self-represented litigants and legal professionals. Built with React and TypeScript, featuring advanced PDF document organization, preview capabilities, and intelligent metadata management.
 
-## Available Scripts
+## 🎯 Current Features
 
-In the project directory, you can run:
+### Document Management
+- **Dynamic Organize Dialog**: Section-specific metadata fields that adapt based on document type
+- **Smart File Organization**: Supports preliminary documents, applications & orders, statements, care plans, expert reports, and more
+- **Automatic Filename Generation**: Context-aware naming based on document metadata
+- **IndexedDB Storage**: Local file storage with efficient retrieval
 
-### `npm start`
+### PDF Viewing & Analysis
+- **High-Quality PDF Renderer**: Offline-first PDF.js integration with local assets
+- **Rectangular Magnifier**: Draggable 200×80px banner magnifier with 2x zoom for examining reference numbers and fine details
+- **Page Navigation**: Full navigation controls (first, previous, next, last) for multi-page documents
+- **Toggle Controls**: Easy show/hide magnifier functionality integrated into modal interface
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### User Interface
+- **Calm Aesthetic**: Clean, uncluttered design following UI specification principles
+- **Progressive Disclosure**: Complexity revealed only when needed
+- **Visual Feedback**: Clear status indicators and interactive elements
+- **Responsive Design**: Consistent experience across different screen sizes
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## 🚀 Getting Started
 
-### `npm test`
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn package manager
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Installation
 
-### `npm run build`
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd mycasefiles
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+3. **Set up PDF.js assets** (automatic)
+   ```bash
+   npm run setup-pdfjs
+   ```
+   This copies PDF.js assets locally for offline functionality.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+4. **Start development server**
+   ```bash
+   npm start
+   ```
+   Opens [http://localhost:3000](http://localhost:3000) in your browser.
 
-### `npm run eject`
+### Available Scripts
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- **`npm start`** - Development server with hot reload
+- **`npm run dev`** - Alias for `npm start`
+- **`npm run build`** - Production build with PDF.js asset setup
+- **`npm test`** - Run test suite
+- **`npm run setup-pdfjs`** - Manually copy PDF.js assets to public directory
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🏗️ Project Structure
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+```
+src/
+├── components/
+│   ├── Dashboard.tsx           # Main dashboard interface
+│   ├── DocumentVault.tsx       # Document library view
+│   ├── FilePreviewModal.tsx    # Dynamic organize dialog
+│   ├── PDFRenderer.tsx         # High-quality PDF viewer with magnifier
+│   ├── EmailManager.tsx        # Email import functionality
+│   └── BundleList.tsx          # Document bundle management
+├── services/
+│   ├── indexedDBService.ts     # Local storage management
+│   └── emailParser.ts          # Email parsing utilities
+├── pdfConfig.ts                # PDF.js configuration for offline use
+├── pdfWorker.ts                # PDF.js worker setup
+└── App.css                     # Application styling
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+docs/
+├── UI_SPEC.md                  # Comprehensive UI specification
+└── react_PDF.md               # PDF processing documentation
 
-## Learn More
+public/pdfjs-dist/              # Local PDF.js assets for offline functionality
+├── build/                      # PDF.js core files and workers
+├── cmaps/                      # Character mapping files (170+ files)
+└── standard_fonts/             # Standard PDF fonts
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## 🔧 Technical Architecture
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+### PDF Processing
+- **react-pdf**: PDF viewing and rendering
+- **PDF.js**: High-quality rendering engine with local assets
+- **Offline-first**: All PDF.js dependencies served locally
+- **High-DPI rendering**: 2x devicePixelRatio for magnifier quality
 
-### Code Splitting
+### Data Management
+- **IndexedDB**: Browser-native storage for documents and metadata
+- **TypeScript**: Type-safe development with interfaces for all data structures
+- **Dynamic metadata**: Section-specific form fields based on document type
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Styling & UI
+- **CSS Custom Properties**: Consistent design system with calm color palette
+- **Flexbox layouts**: Responsive and accessible interface design
+- **Progressive enhancement**: Features gracefully degrade for older browsers
 
-### Analyzing the Bundle Size
+## 🎨 Design System
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Color Palette
+- **Primary Blue**: `#4A90E2` - Active states and primary actions
+- **Secondary Blue**: `#357ABD` - Hover states and secondary elements
+- **Light Gray**: `#F5F7FA` - Background areas
+- **Medium Gray**: `#E1E4E8` - Borders and subtle elements
+- **Dark Gray**: `#586069` - Secondary text
+- **Text Primary**: `#24292E` - Main content text
 
-### Making a Progressive Web App
+### Typography
+- **Primary Font**: System font stack for optimal performance
+- **Font Weights**: 400 (normal), 500 (medium), 600 (semibold)
+- **Line Height**: 1.6 for optimal readability
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 📋 Development Status
 
-### Advanced Configuration
+### ✅ Completed Features
+- Dynamic document organization with section-specific metadata
+- High-quality PDF rendering with offline assets
+- Rectangular banner magnifier with 2x zoom
+- Page navigation controls for multi-page documents
+- Toggle controls for magnifier visibility
+- Local PDF.js asset management and build integration
+- TypeScript interfaces for all major data structures
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### 🚧 In Development
+- Bundle generation with automatic page numbering
+- Email parsing and import functionality
+- Advanced search and filtering capabilities
+- Document pruning and page selection tools
 
-### Deployment
+### 📅 Planned Features
+- Professional tier with watermark removal
+- Advanced redaction tools
+- Email summarization with LLM integration
+- Export functionality for various document formats
+- Multi-user collaboration features
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## 🔄 Git Workflow
 
-### `npm run build` fails to minify
+### Commit Guidelines
+- Standard commit messages (Claude attribution excluded per CLAUDE.md)
+- Feature branches for new development
+- Main branch protection for stable releases
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+### Branch Structure
+- `main` - Production-ready code
+- `develop` - Integration branch for features
+- `feature/*` - Individual feature development
+
+## 🐛 Known Issues & Limitations
+
+1. **PDF.js Version Compatibility**: Using react-pdf's bundled PDF.js version to avoid conflicts
+2. **Large File Performance**: Files over 50MB may experience slower rendering
+3. **Browser Compatibility**: Full functionality requires modern browsers with IndexedDB support
+
+## 📚 Documentation
+
+- **[UI Specification](docs/UI_SPEC.md)** - Complete design system and user experience guidelines
+- **[PDF Processing Guide](docs/react_PDF.md)** - Technical notes on PDF handling
+- **[CLAUDE.md](CLAUDE.md)** - Development configuration and project context
+
+## 🤝 Contributing
+
+1. Follow the established code style and TypeScript patterns
+2. Ensure all PDF.js assets remain local for offline functionality
+3. Test magnifier and PDF rendering across different document types
+4. Update documentation for any new features or changes
+
+## 📄 License
+
+This project is proprietary software designed for legal document management.
+
+---
+
+**Built with React, TypeScript, and PDF.js for professional legal document management.**
