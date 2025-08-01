@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { openDB, addFile, getFiles, updateFile, StoredFile } from './services/indexedDBService';
 import './App.css';
-import './pdfWorker'; // Import PDF worker configuration
 import Dashboard from './components/Dashboard';
 import DocumentVault from './components/DocumentVault';
 import BundleList from './components/BundleList';

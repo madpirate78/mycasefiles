@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
-const isDev = require('electron-is-dev');
+const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === 'true';
 const pdfParse = require('pdf-parse');
 const fs = require('fs');
 const { LegalDocumentAI } = require('./ai/summarizer');
@@ -29,6 +29,11 @@ function createWindow() {
     : `file://${path.join(__dirname, '../build/index.html')}`;
   
   mainWindow.loadURL(startUrl);
+
+  // Open DevTools in development mode
+  if (isDev) {
+    mainWindow.webContents.openDevTools();
+  }
 
   // Create custom menu for legal document management
   const menuTemplate = [
@@ -85,6 +90,7 @@ function createWindow() {
       submenu: [
         { role: 'reload' },
         { role: 'forceReload' },
+        { role: 'toggleDevTools' },
         { type: 'separator' },
         { role: 'resetZoom' },
         { role: 'zoomIn' },

@@ -48,19 +48,40 @@ class LegalDocumentAI {
         return this.generateBasicDescription(filename, text);
       }
 
-      // Split into chunks if text is too long
-      const chunks = this.chunkText(processedText, 1024);
+      // Split into very small chunks for aggressive CPU management
+      const chunks = this.chunkText(processedText, 256);
       
-      const summaries = await Promise.all(
-        chunks.map((chunk) =>
-          this.summarizer(chunk, {
-            max_length: Math.min(maxLength, 100),
-            min_length: 20,
-            do_sample: false,
-            no_repeat_ngram_size: 3
-          })
-        )
-      );
+      // Process chunks sequentially with aggressive CPU throttling
+      const summaries = [];
+      for (let i = 0; i < chunks.length; i++) {
+        console.log(`🔄 Processing chunk ${i + 1}/${chunks.length}...`);
+        
+        // Process one chunk with timeout wrapper for better control
+        const summary = await new Promise(async (resolve, reject) => {
+          try {
+            // Add artificial delay before processing each chunk
+            await new Promise(r => setTimeout(r, 100));
+            
+            const result = await this.summarizer(chunks[i], {
+              max_length: Math.min(maxLength, 80),
+              min_length: 15,
+              do_sample: false,
+              no_repeat_ngram_size: 3
+            });
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        });
+        
+        summaries.push(summary);
+        
+        // Much longer delay between chunks for CPU breathing room
+        if (i < chunks.length - 1) {
+          console.log(`⏳ Pausing for CPU breathing room...`);
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+      }
 
       let description = summaries.map((s) => s[0].summary_text).join(" ");
       

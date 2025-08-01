@@ -2,6 +2,7 @@
   "name": "mycasefiles",
   "version": "0.1.0",
   "private": true,
+  "homepage": "./",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.4",
@@ -11,23 +12,20 @@
     "electron-is-dev": "^3.0.1",
     "eml-parser": "^2.0.4",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^5.4.54",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-pdf": "^10.0.1",
     "react-scripts": "5.0.1",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
     "dev": "react-scripts start",
-    "build": "npm run setup-pdfjs && react-scripts build",
+    "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "setup-pdfjs": "node scripts/setup-pdfjs.js",
-    "postinstall": "npm run setup-pdfjs",
     "electron": "electron public/electron.js",
     "electron-dev": "ELECTRON_IS_DEV=true electron public/electron.js",
+    "dev-electron": "npm run build && npm run electron",
     "build-electron": "npm run build && electron-builder",
     "dist": "npm run build && electron-builder --publish=never"
   },

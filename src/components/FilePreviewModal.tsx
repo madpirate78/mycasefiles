@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StoredFile } from '../services/indexedDBService';
-import PDFRenderer from './PDFRenderer';
+import ElectronPDFRenderer from './ElectronPDFRenderer';
 import { getSuggestedMetadata, extractFromPDF } from '../services/documentParser';
 
 interface FilePreviewModalProps {
@@ -40,9 +40,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     section: 'other',
     description: ''
   });
+  const [pdfText, setPdfText] = useState<string>('');
 
   // Auto-populate metadata when file changes
   useEffect(() => {
+    // Reset states when file changes
+    setMetadata({
+      name: file?.name || '',
+      section: 'other',
+      description: ''
+    });
+    setPdfText('');
+    
     const populateMetadata = async () => {
       if (file) {
         console.log('Auto-populating metadata for file:', file.name);
@@ -70,8 +79,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             console.log('✅ ArrayBuffer created, size:', arrayBuffer.byteLength);
             
             // Get raw text from PDF via Electron API (for AI description)
-            if (window.electronAPI && window.electronAPI.parsePDF) {
-              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+            if (window.electron && window.electron.parsePDF) {
+              const pdfResult = await window.electron.parsePDF(arrayBuffer);
               if (pdfResult.success && pdfResult.text) {
                 pdfText = pdfResult.text;
                 console.log('📝 Raw PDF text extracted, length:', pdfText.length);
@@ -101,16 +110,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           ...suggestedMetadata
         };
 
-        // Add PDF-extracted data if not already present from filename
+        // Add PDF-extracted data (supplement filename data)
         if (pdfData) {
-          if (!finalMetadata.reference && !finalMetadata.courtReference && pdfData.caseNumber) {
+          if (pdfData.caseNumber && !finalMetadata.reference) {
             finalMetadata.reference = pdfData.caseNumber;
+          }
+          if (pdfData.caseNumber && !finalMetadata.courtReference) {
             finalMetadata.courtReference = pdfData.caseNumber;
           }
-          if (!finalMetadata.judgeName && pdfData.judgeName) {
+          if (pdfData.judgeName) {
             finalMetadata.judgeName = pdfData.judgeName;
           }
-          if (!finalMetadata.documentType && pdfData.documentType) {
+          if (pdfData.documentType && !finalMetadata.documentType) {
             // Map PDF document type to form document type
             if (pdfData.documentType === 'order') {
               if (finalMetadata.section === 'child_applications') {
@@ -123,30 +134,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           }
         }
 
-        // Generate AI description if we have extracted text
+        // Store PDF text for future use (AI processing moved to separate page)
         if (pdfText && pdfText.length > 20) {
-          try {
-            console.log('🤖 Generating AI description...');
-            if (window.electronAPI && window.electronAPI.generateDescription) {
-              const aiResult = await window.electronAPI.generateDescription(
-                pdfText, 
-                file.name
-              );
-              
-              if (aiResult.success && aiResult.description) {
-                finalMetadata.description = aiResult.description;
-                console.log('✅ AI description generated:', aiResult.description);
-                
-                if (aiResult.fallback) {
-                  console.log('⚠️ Used fallback description method');
-                }
-              }
-            } else {
-              console.log('⚠️ AI description not available (not in Electron)');
-            }
-          } catch (error) {
-            console.error('❌ AI description generation failed:', error);
-          }
+          setPdfText(pdfText);
+          console.log('📝 PDF text stored (length:', pdfText.length, ')');
         }
 
         console.log('Final merged metadata:', finalMetadata);
@@ -424,7 +415,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           <div className="preview-section">
             <div className="pdf-preview">
               {file.type.includes('pdf') ? (
-                <PDFRenderer 
+                <ElectronPDFRenderer 
                   file={file.data}
                   onLoad={() => console.log('PDF loaded successfully')}
                   onError={(error) => console.error('PDF error:', error)}
@@ -474,13 +465,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
             <div className="form-group">
               <label>Description</label>
-              <textarea
-                value={metadata.description}
-                onChange={(e) => setMetadata({...metadata, description: e.target.value})}
-                placeholder="Brief description of the document..."
-                className="form-textarea"
-                rows={3}
-              />
+              <div className="description-field-container">
+                <textarea
+                  value={metadata.description}
+                  onChange={(e) => setMetadata({...metadata, description: e.target.value})}
+                  placeholder="Brief description of the document..."
+                  className="form-textarea"
+                  rows={3}
+                />
+              </div>
             </div>
 
 

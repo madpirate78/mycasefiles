@@ -154,19 +154,20 @@ export class PDFContentParser {
    * Focus: Court Reference Number, Document Type, and Judge Name
    */
   extractFromText(pdfText: string): { caseNumber: string | null; documentType: 'order' | 'application' | null; judgeName: string | null } {
-    console.log('Extracting key info from PDF text, length:', pdfText.length);
+    console.log('🔍 Extracting key info from PDF text, length:', pdfText.length);
+    console.log('📃 First 500 chars of PDF text:', pdfText.substring(0, 500));
     
     // 1. Extract court reference number (MOST IMPORTANT)
     const caseNumber = this.extractCaseNumber(pdfText);
-    console.log('Extracted case number:', caseNumber);
+    console.log('🏛️ Extracted case number:', caseNumber);
 
     // 2. Determine document type (SECOND MOST IMPORTANT)
     const documentType = this.identifyDocumentType(pdfText);
-    console.log('Identified document type:', documentType);
+    console.log('📋 Identified document type:', documentType);
 
     // 3. Extract judge name (THIRD MOST IMPORTANT)
     const judgeName = this.extractJudgeName(pdfText);
-    console.log('Extracted judge name:', judgeName);
+    console.log('👨‍⚖️ Extracted judge name:', judgeName);
 
     return {
       caseNumber,
@@ -179,15 +180,27 @@ export class PDFContentParser {
    * Extract case number with improved patterns using multi-pattern approach
    */
   private extractCaseNumber(text: string): string | null {
+    console.log('🔎 Testing case number patterns...');
     // Try each pattern in order of specificity
-    for (const pattern of this.patterns.caseNumber) {
+    for (let i = 0; i < this.patterns.caseNumber.length; i++) {
+      const pattern = this.patterns.caseNumber[i];
+      console.log(`Pattern ${i + 1}:`, pattern.toString());
       const match = text.match(pattern);
-      if (match && match[1]) {
-        const caseNum = match[1].trim().toUpperCase();
-        // Validate it looks like a UK court reference
-        if (this.isValidCaseNumber(caseNum)) {
-          return caseNum;
+      if (match) {
+        console.log(`✅ Pattern ${i + 1} matched:`, match);
+        if (match[1]) {
+          const caseNum = match[1].trim().toUpperCase();
+          console.log('🔍 Extracted case number candidate:', caseNum);
+          // Validate it looks like a UK court reference
+          if (this.isValidCaseNumber(caseNum)) {
+            console.log('✅ Valid case number found:', caseNum);
+            return caseNum;
+          } else {
+            console.log('❌ Invalid case number format:', caseNum);
+          }
         }
+      } else {
+        console.log(`❌ Pattern ${i + 1} no match`);
       }
     }
     return null;

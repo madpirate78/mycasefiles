@@ -21,10 +21,10 @@ A comprehensive legal case management desktop application designed for self-repr
 
 ### AI Intelligence
 - **Local LLM Integration**: On-device Transformers.js model for privacy and offline use
-- **Automatic Description Generation**: AI creates concise descriptions of court documents
-- **Legal Context Awareness**: Model trained on legal document patterns
-- **Fallback Intelligence**: Basic description generation when AI model is loading
-- **~250MB Model Size**: Distilbart-cnn-6-6 model downloads once and runs locally
+- **Batch Processing Architecture**: AI document analysis planned as separate batch processing feature
+- **Legal Context Awareness**: Model trained on legal document patterns for accurate legal document analysis
+- **Privacy-First Design**: All AI processing happens locally, no data sent to external services
+- **~250MB Model Size**: Distilbart-cnn-6-6 model available for future batch processing implementation
 
 ### Desktop Experience
 - **Native Desktop App**: Electron wrapper providing full Node.js capabilities
@@ -70,28 +70,35 @@ sudo apt install -y libnss3-dev libatk-bridge2.0-dev libdrm2 libxkbcommon-dev li
 
 ### Development Mode
 
+**Recommended for Testing** (fresh build every time, no caching issues)
+```bash
+npm run dev-electron
+```
+Builds React app and launches Electron with guaranteed fresh code - best for reliable testing.
+
+**Quick Development** (may have caching issues)
+```bash
+npm run electron
+```
+Launches Electron with existing build - faster but may serve cached code.
+
 **React Development Server** (limited PDF parsing)
 ```bash
 npm start
 ```
-Opens [http://localhost:3000](http://localhost:3000) for UI development.
-
-**Electron Development** (full PDF parsing capabilities)
-```bash
-npm run electron-dev
-```
-Launches Electron app connected to React dev server with hot reload.
+Opens [http://localhost:3000](http://localhost:3000) for UI development only.
 
 ### Available Scripts
 
-**Development:**
+**Development & Testing:**
+- **`npm run dev-electron`** - **RECOMMENDED** Build and launch with fresh code (no caching issues)
+- **`npm run electron`** - Quick launch (may use cached build)
 - **`npm start`** - React development server (web mode, limited PDF parsing)
-- **`npm run electron-dev`** - Electron development with hot reload (full desktop features)
+- **`npm run electron-dev`** - Electron development with hot reload (connects to React dev server)
 
 **Production:**
 - **`npm run build`** - Build React app with PDF.js assets
-- **`npm run electron`** - Launch Electron desktop app (requires build first)
-- **`npm run build-electron`** - Build React app and launch Electron
+- **`npm run build-electron`** - Build and package Electron app
 - **`npm run dist`** - Create distributable desktop packages (Windows/macOS/Linux)
 
 **Utilities:**
@@ -202,7 +209,7 @@ docs/
 - **UK Court Integration**: Pattern recognition for case numbers (AB12C34567), form types (C100, FL401), judge abbreviations (HHJ, DJ, DDJ) ✅ **TESTED & WORKING**
 - **Smart Auto-Population**: Intelligent form field pre-filling works for both text-based and scanned PDFs ✅ **TESTED & WORKING**
 - **Professional Menu System**: Custom legal document management menus with keyboard shortcuts ✅ **WORKING**
-- **AI Document Descriptions**: Local LLM generates intelligent descriptions for court documents using Transformers.js ✅ **TESTED & WORKING**
+- **Local AI Framework**: Transformers.js infrastructure ready for future batch document processing ✅ **READY FOR IMPLEMENTATION**
 - **Dynamic Document Organization**: Section-specific metadata fields for UK family court structure
 - **Carousel PDF Navigation**: Floating buttons around PDF for intuitive page control
 - **Full-Screen PDF View**: Maximized preview area with controls panel layout
@@ -218,6 +225,7 @@ docs/
 - **Email Integration**: Import functionality for court correspondence
 
 ### 📅 Planned Features
+- **Batch AI Document Processing**: Dedicated page for AI-powered document analysis and description generation
 - **Advanced Document Intelligence**: Full court order parsing with dates and conditions
 - **Professional Export**: PDF bundle generation with table of contents
 - **Search & Filter**: Advanced search across document text content
