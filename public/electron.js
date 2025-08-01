@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const isDev = require('electron-is-dev');
 const pdfParse = require('pdf-parse');
@@ -14,7 +14,9 @@ function createWindow() {
       contextIsolation: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js')
-    }
+    },
+    icon: path.join(__dirname, 'favicon.ico'), // App icon
+    title: 'My Case Files - Legal Document Management'
   });
 
   // Load the app
@@ -23,6 +25,102 @@ function createWindow() {
     : `file://${path.join(__dirname, '../build/index.html')}`;
   
   mainWindow.loadURL(startUrl);
+
+  // Create custom menu for legal document management
+  const menuTemplate = [
+    {
+      label: 'File',
+      submenu: [
+        {
+          label: 'Import Documents...',
+          accelerator: 'CmdOrCtrl+O',
+          click: () => {
+            // TODO: Implement file import dialog
+            mainWindow.webContents.send('menu-import-documents');
+          }
+        },
+        {
+          label: 'Export Case Bundle...',
+          accelerator: 'CmdOrCtrl+E',
+          click: () => {
+            // TODO: Implement bundle export
+            mainWindow.webContents.send('menu-export-bundle');
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Exit',
+          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+          click: () => {
+            app.quit();
+          }
+        }
+      ]
+    },
+    {
+      label: 'Documents',
+      submenu: [
+        {
+          label: 'Organize Document...',
+          accelerator: 'CmdOrCtrl+D',
+          click: () => {
+            mainWindow.webContents.send('menu-organize-document');
+          }
+        },
+        {
+          label: 'Search Documents...',
+          accelerator: 'CmdOrCtrl+F',
+          click: () => {
+            mainWindow.webContents.send('menu-search-documents');
+          }
+        }
+      ]
+    },
+    {
+      label: 'View',
+      submenu: [
+        { role: 'reload' },
+        { role: 'forceReload' },
+        { type: 'separator' },
+        { role: 'resetZoom' },
+        { role: 'zoomIn' },
+        { role: 'zoomOut' },
+        { type: 'separator' },
+        { role: 'togglefullscreen' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'About My Case Files',
+          click: () => {
+            mainWindow.webContents.send('menu-about');
+          }
+        }
+      ]
+    }
+  ];
+
+  // Add developer menu in development
+  if (isDev) {
+    menuTemplate.push({
+      label: 'Developer',
+      submenu: [
+        { role: 'toggleDevTools' },
+        { type: 'separator' },
+        {
+          label: 'Test PDF Parser',
+          click: () => {
+            console.log('Testing PDF parser...');
+          }
+        }
+      ]
+    });
+  }
+
+  const menu = Menu.buildFromTemplate(menuTemplate);
+  Menu.setApplicationMenu(menu);
 
   // Open DevTools in development
   if (isDev) {
@@ -50,8 +148,22 @@ app.on('activate', () => {
 ipcMain.handle('parse-pdf', async (event, pdfBuffer) => {
   try {
     console.log('Parsing PDF buffer of size:', pdfBuffer.length);
-    const data = await pdfParse(Buffer.from(pdfBuffer));
+    
+    // Enhanced pdf-parse options for better text extraction
+    const options = {
+      // Normalize whitespace and line breaks
+      normalizeWhitespace: true,
+      // Don't combine text items too aggressively
+      disableCombineTextItems: false,
+      // Maximum pages to parse (for performance)
+      max: 3
+    };
+    
+    const data = await pdfParse(Buffer.from(pdfBuffer), options);
     console.log('PDF parsing successful, text length:', data.text.length);
+    console.log('PDF info:', data.info);
+    console.log('First 300 chars:', data.text.substring(0, 300));
+    
     return {
       success: true,
       text: data.text,

@@ -107,25 +107,33 @@ export class PDFContentParser {
    */
   async extractFromPDF(pdfBuffer: ArrayBuffer): Promise<{ caseNumber: string | null; documentType: 'order' | 'application' | null; judgeName: string | null }> {
     try {
+      console.log('🔧 PDF extraction started, buffer size:', pdfBuffer.byteLength);
+      console.log('🌐 Environment check - electronAPI available:', !!window.electronAPI);
+      
       // Check if we're in Electron environment
       if (window.electronAPI && window.electronAPI.parsePDF) {
-        console.log('Using Electron PDF parser...');
+        console.log('✅ Using Electron PDF parser...');
         const result = await window.electronAPI.parsePDF(pdfBuffer);
+        console.log('📄 Electron PDF result:', { success: result.success, textLength: result.text?.length, error: result.error });
         
         if (result.success && result.text) {
-          console.log('Electron PDF parsing successful, text length:', result.text.length);
-          return this.extractFromText(result.text);
+          console.log('🎉 Electron PDF parsing successful, extracting patterns...');
+          console.log('📝 First 200 chars of PDF text:', result.text.substring(0, 200));
+          const extracted = this.extractFromText(result.text);
+          console.log('🔍 Final extraction result:', extracted);
+          return extracted;
         } else {
-          console.error('Electron PDF parsing failed:', result.error);
+          console.error('❌ Electron PDF parsing failed:', result.error);
           return { caseNumber: null, documentType: null, judgeName: null };
         }
       } else {
         // Fallback to browser-based parsing (limited functionality)
-        console.log('Electron API not available, falling back to limited parsing');
+        console.warn('⚠️ Electron API not available, falling back to limited parsing');
+        console.log('🌍 Running in browser mode - PDF parsing disabled');
         return { caseNumber: null, documentType: null, judgeName: null };
       }
     } catch (error) {
-      console.error('PDF parsing failed:', error);
+      console.error('💥 PDF parsing failed:', error);
       return { caseNumber: null, documentType: null, judgeName: null };
     }
   }

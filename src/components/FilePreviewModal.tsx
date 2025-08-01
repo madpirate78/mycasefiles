@@ -55,14 +55,32 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         let pdfData = null;
         if (file.type.includes('pdf') && file.data) {
           try {
-            console.log('Extracting from PDF content...');
+            console.log('🔄 Starting PDF content extraction...');
+            console.log('📁 File info:', { 
+              name: file.name, 
+              type: file.type, 
+              size: file.data.size,
+              dataType: typeof file.data 
+            });
+            
             // Convert File to ArrayBuffer
+            console.log('🔧 Converting File to ArrayBuffer...');
             const arrayBuffer = await file.data.arrayBuffer();
+            console.log('✅ ArrayBuffer created, size:', arrayBuffer.byteLength);
+            
+            console.log('📄 Calling extractFromPDF...');
             pdfData = await extractFromPDF(arrayBuffer);
-            console.log('PDF extracted data:', pdfData);
+            console.log('🎉 PDF extraction completed:', pdfData);
           } catch (error) {
-            console.error('PDF extraction failed:', error);
+            console.error('💥 PDF extraction failed:', error);
+            console.error('Error details:', error instanceof Error ? error.stack : String(error));
           }
+        } else {
+          console.log('⚠️ Skipping PDF extraction:', {
+            isPdf: file.type.includes('pdf'),
+            hasData: !!file.data,
+            fileType: file.type
+          });
         }
         
         // Merge filename and PDF data (filename takes priority for existing fields)
