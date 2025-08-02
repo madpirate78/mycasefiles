@@ -10,7 +10,6 @@ import VaultSettings from './components/VaultSettings';
 import FolderImportWizard from './components/FolderImportWizard';
 import { FileMetadata } from './components/FilePreviewModal';
 import { VaultType } from './types/vault';
-import vaultService from './services/vaultService';
 
 type View = 'home' | 'bundles' | 'documents' | 'emails' | 'import' | 'settings';
 
@@ -29,31 +28,15 @@ function App() {
 
   const isDuplicateFile = async (newFile: File, currentVaultType: VaultType): Promise<boolean> => {
     try {
-      console.log('🔍 Checking for duplicates...');
-      console.log('New file:', { name: newFile.name, size: newFile.size });
-      
       // Get fresh files from database, not from state
       const existingFiles = await getFiles(currentVaultType);
-      console.log('Existing files count:', existingFiles.length);
       
       const isDuplicate = existingFiles.some(existingFile => {
         const nameMatch = (existingFile.originalName || existingFile.name) === newFile.name;
         const sizeMatch = existingFile.data.size === newFile.size;
-        
-        if (nameMatch || sizeMatch) {
-          console.log('Comparing with:', { 
-            originalName: existingFile.originalName, 
-            name: existingFile.name, 
-            size: existingFile.data.size,
-            nameMatch, 
-            sizeMatch 
-          });
-        }
-        
         return nameMatch && sizeMatch;
       });
       
-      console.log('Is duplicate?', isDuplicate);
       return isDuplicate;
     } catch (error) {
       console.error('Error checking duplicates:', error);
@@ -67,8 +50,6 @@ function App() {
   };
 
   const handleFileUpload = async (files: FileList) => {
-    console.log("📤 UPLOAD BUTTON PRESSED: File dialog opened");
-    console.log("Files uploaded:", files);
     const totalFiles = files.length;
     let successCount = 0;
     let duplicateCount = 0;
@@ -79,14 +60,12 @@ function App() {
       try {
         // Check for duplicates
         if (await isDuplicateFile(file, currentVault)) {
-          console.log(`Duplicate file detected: ${file.name}`);
           duplicateFiles.push(file.name);
           duplicateCount++;
           continue;
         }
 
         await addFile(file, currentVault);
-        console.log(`File ${file.name} added to IndexedDB with vault type: ${currentVault}`);
         successCount++;
       } catch (error) {
         console.error(`Error adding file ${file.name} to IndexedDB:`, error);
@@ -132,8 +111,6 @@ function App() {
   const fetchFilesFromDB = React.useCallback(async () => {
     try {
       const files = await getFiles(currentVault);
-      console.log(`📁 Fetched ${files.length} files for ${currentVault} vault`);
-      console.log('Files:', files.map(f => ({ name: f.name, section: (f as any).section, vaultType: f.vaultType })));
       setUploadedFiles(files);
     } catch (error) {
       console.error("Error fetching files from IndexedDB:", error);
@@ -153,7 +130,6 @@ function App() {
         courtReference: metadata.courtReference,
         applicationDate: metadata.applicationDate
       });
-      console.log('File updated successfully');
       fetchFilesFromDB(); // Refresh the files list
     } catch (error) {
       console.error('Error updating file:', error);
@@ -166,7 +142,6 @@ function App() {
         section: section,
         vaultType: vaultType
       });
-      console.log(`File quickly organized to section: ${section}`);
       fetchFilesFromDB(); // Refresh the files list
     } catch (error) {
       console.error('Error organizing file:', error);
@@ -174,9 +149,6 @@ function App() {
   };
 
   const handleFolderImport = async (files: FileList, mappings: Array<{ file: File; sectionId: string }>) => {
-    console.log("📤 FOLDER IMPORT STARTED: Processing organized folder structure");
-    console.log("Files to import:", files.length);
-    console.log("Mappings:", mappings.length);
     
     let successCount = 0;
     let duplicateCount = 0;
@@ -187,7 +159,6 @@ function App() {
       try {
         // Check for duplicates
         if (await isDuplicateFile(mapping.file, currentVault)) {
-          console.log(`Duplicate file detected: ${mapping.file.name}`);
           duplicateFiles.push(mapping.file.name);
           duplicateCount++;
           continue;
@@ -206,7 +177,6 @@ function App() {
           });
         }
 
-        console.log(`File ${mapping.file.name} imported to section: ${mapping.sectionId}`);
         successCount++;
       } catch (error) {
         console.error(`Error importing file ${mapping.file.name}:`, error);
@@ -237,14 +207,12 @@ function App() {
   };
 
   const handleVaultChange = (vaultType: VaultType) => {
-    console.log(`🔄 VAULT CHANGE BUTTON PRESSED: Switching from ${currentVault} to ${vaultType}`);
     setCurrentVault(vaultType);
   };
 
   const handleFileDelete = async (fileId: number) => {
     try {
       await deleteFile(fileId);
-      console.log(`File with ID ${fileId} deleted successfully`);
       showUploadNotification('success', 'File deleted successfully');
       fetchFilesFromDB(); // Refresh the files list
     } catch (error) {
@@ -264,34 +232,25 @@ function App() {
       }
 
       try {
-        console.log("🚀 Starting app initialization...");
-        const database = await openDB();
-        console.log("Database opened:", !!database);
-        
-        console.log("🔄 Loading initial files...");
+        await openDB();
         const files = await getFiles(currentVault);
-        console.log(`📁 Found ${files.length} files for ${currentVault} vault`);
         setUploadedFiles(files);
-        console.log("✅ Initial files loaded");
         
         // Add clear database function to global scope for console access
         (window as any).clearDB = async () => {
           try {
             await clearDatabase();
             setUploadedFiles([]);
-            console.log("✅ Database cleared! Page will refresh...");
+            console.log("Database cleared! Page will refresh...");
             window.location.reload();
           } catch (error) {
-            console.error("❌ Failed to clear database:", error);
+            console.error("Failed to clear database:", error);
           }
         };
-        console.log("💡 To clear database, run: clearDB() in console");
         
         setIsInitialized(true);
-        console.log("✅ App initialization complete");
       } catch (error) {
-        console.error("❌ Failed to initialize app:", error);
-        console.error("Error details:", error);
+        console.error("Failed to initialize app:", error);
       }
     };
 
@@ -314,7 +273,7 @@ function App() {
       case 'bundles':
         return <BundleList uploadedFiles={uploadedFiles} />;
       case 'documents':
-        return <DocumentVault uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileDelete={handleFileDelete} currentVault={currentVault} />;
+        return <DocumentVault uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileDelete={handleFileDelete} onFileEdit={handleFileUpdate} currentVault={currentVault} />;
       case 'emails':
         return <EmailManager onFileUpload={handleFileUpload} />;
       case 'import':

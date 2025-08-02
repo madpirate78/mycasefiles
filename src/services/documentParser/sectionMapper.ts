@@ -1,4 +1,4 @@
-import { FilenameData, SuggestedMetadata } from './types';
+import { SuggestedMetadata } from './types';
 import { FilenameParser } from './filenameParser';
 import { CaseType } from '../../types/case';
 

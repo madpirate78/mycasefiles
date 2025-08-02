@@ -1046,16 +1046,7 @@ body {
   margin-bottom: var(--spacing-lg);
 }
 
-.form-group {
-  margin-bottom: var(--spacing-md);
-}
-
-.form-group label {
-  display: block;
-  font-size: 14px;
-  font-weight: 500;
-  margin-bottom: var(--spacing-xs);
-}
+/* Removed duplicate .form-group definition - using the earlier horizontal layout version */
 
 .form-input,
 .form-textarea {
@@ -1477,14 +1468,108 @@ body {
   flex-direction: column;
   overflow-y: auto;
   min-width: 320px;
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
   background: var(--light-gray);
   border-left: 1px solid var(--medium-gray);
 }
 
+/* More compact form spacing in modal metadata section */
+.modal-content .metadata-section .form-group {
+  margin-bottom: var(--spacing-sm);
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-sm) !important;
+  flex-direction: row !important;
+}
+
+.metadata-section .form-group {
+  margin-bottom: var(--spacing-sm);
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--spacing-sm) !important;
+  flex-direction: row !important;
+}
+
+.metadata-section .form-group:last-of-type {
+  margin-bottom: var(--spacing-md);
+}
+
+/* Labels take fixed width, fields take remaining space */
+.modal-content .metadata-section .form-group label,
+.metadata-section .form-group label {
+  min-width: 120px !important;
+  flex-shrink: 0 !important;
+  margin-bottom: 0 !important;
+  text-align: left !important;
+  display: inline-block !important;
+}
+
+.modal-content .metadata-section .form-group .form-input,
+.modal-content .metadata-section .form-group .form-select,
+.modal-content .metadata-section .form-group .form-textarea,
+.metadata-section .form-group .form-input,
+.metadata-section .form-group .form-select,
+.metadata-section .form-group .form-textarea {
+  flex: 1 !important;
+  display: inline-block !important;
+}
+
+/* Special handling for vertical layouts that need full width */
+.metadata-section .form-group.vault-type-selector {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.metadata-section .form-group.vault-type-selector label {
+  min-width: auto;
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Force vertical layout for form groups containing these elements */
+.metadata-section .form-group:has(.description-field-container),
+.metadata-section .form-group:has(.ocr-status-container) {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.metadata-section .form-group:has(.description-field-container) label,
+.metadata-section .form-group:has(.ocr-status-container) label {
+  min-width: auto;
+  margin-bottom: var(--spacing-xs);
+}
+
+/* Ensure full width for special containers */
+.metadata-section .description-field-container,
+.metadata-section .ocr-status-container {
+  width: 100%;
+}
+
+/* More compact vault type selector in metadata section */
+.metadata-section .vault-type-selector {
+  padding: var(--spacing-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* More compact OCR status sections */
+.metadata-section .ocr-status-container {
+  margin-top: var(--spacing-xs);
+}
+
+.metadata-section .ocr-prompt,
+.metadata-section .ocr-processing,
+.metadata-section .ocr-complete {
+  padding: var(--spacing-sm);
+  margin: var(--spacing-xs) 0;
+}
+
+.metadata-section .ocr-note {
+  margin-top: var(--spacing-xs);
+  font-size: 12px;
+}
+
 .preview-section h3,
 .metadata-section h3 {
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-xs);
   font-size: 16px;
   font-weight: 600;
   flex-shrink: 0;

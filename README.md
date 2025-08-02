@@ -293,8 +293,11 @@ docs/
 - **Detailed Metadata Enhancement**: Secondary workflow for adding comprehensive document details after section assignment
 
 ### 📅 Planned Features
+- **PDF Page Pruning**: Interactive PDF viewer allowing users to select specific pages to include/exclude from documents for court bundles
+- **Advanced Bundle Generation**: One-click court bundle creation with automatic page numbering, table of contents, and professional formatting
+- **Enhanced Bundle Builder**: Visual interface for organizing sections and reordering documents within court bundles
 - **Advanced Document Intelligence**: Full court order parsing with dates and conditions
-- **Professional Export**: PDF bundle generation with table of contents
+- **Professional Export**: PDF bundle generation with comprehensive table of contents and pagination
 - **Search & Filter**: Advanced search across document text content
 - **Redaction Tools**: Privacy protection for sensitive information
 - **Backup & Sync**: Cloud storage integration for document safety

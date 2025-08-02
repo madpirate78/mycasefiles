@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import ElectronPDFRenderer from './ElectronPDFRenderer';
 import { getSuggestedMetadata, extractFromPDF, detectVaultType } from '../services/documentParser';
-import { formatDateForInput, parseUKDate } from '../utils/dateUtils';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
 

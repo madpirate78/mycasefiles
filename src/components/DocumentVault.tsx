@@ -3,11 +3,13 @@ import { StoredFile } from '../services/indexedDBService';
 import { formatStoredDate } from '../utils/dateUtils';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
+import FilePreviewModal, { FileMetadata } from './FilePreviewModal';
 
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
   onFileUpload: (files: FileList) => void;
   onFileDelete?: (fileId: number) => void;
+  onFileEdit?: (fileId: number, metadata: FileMetadata) => void;
   currentVault: VaultType;
 }
 
@@ -19,11 +21,13 @@ interface ExtendedFile extends StoredFile {
   date?: string;
 }
 
-const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, onFileDelete, currentVault }) => {
+const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, onFileDelete, onFileEdit, currentVault }) => {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
+  const [editingFile, setEditingFile] = useState<StoredFile | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Get vault-specific sections
   const sections = vaultService.getVaultSections(currentVault);
@@ -37,6 +41,24 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
       // Reset deleting state after a short delay
       setTimeout(() => setDeletingFileId(null), 500);
     }
+  };
+
+  const handleEditClick = (file: StoredFile) => {
+    setEditingFile(file);
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSave = (fileId: number, metadata: FileMetadata) => {
+    if (onFileEdit) {
+      onFileEdit(fileId, metadata);
+    }
+    setIsEditModalOpen(false);
+    setEditingFile(null);
+  };
+
+  const handleEditClose = () => {
+    setIsEditModalOpen(false);
+    setEditingFile(null);
   };
 
   // Filter and sort files
@@ -219,7 +241,12 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                     </div>
                     <div className="doc-actions-inline">
                       <button className="link-btn">View</button>
-                      <button className="link-btn">Edit</button>
+                      <button 
+                        className="link-btn"
+                        onClick={() => handleEditClick(file)}
+                      >
+                        Edit
+                      </button>
                       <button 
                         className={`link-btn danger ${deletingFileId === file.id ? 'deleting' : ''}`}
                         onClick={() => file.id && handleDeleteClick(file.id, file.name)}
@@ -235,6 +262,15 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
           )}
         </div>
       </div>
+
+      {/* Edit Modal */}
+      <FilePreviewModal
+        file={editingFile}
+        isOpen={isEditModalOpen}
+        onClose={handleEditClose}
+        onSave={handleEditSave}
+        vaultType={currentVault}
+      />
     </div>
   );
 };
