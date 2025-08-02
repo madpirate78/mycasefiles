@@ -1,24 +1,43 @@
 import React, { useState } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import { formatStoredDate } from '../utils/dateUtils';
+import { VaultType } from '../types/vault';
+import vaultService from '../services/vaultService';
 
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
   onFileUpload: (files: FileList) => void;
+  currentVault: VaultType;
 }
 
-const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload }) => {
+const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, currentVault }) => {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
 
+  // Get vault-specific sections
+  const sections = vaultService.getVaultSections(currentVault);
+  
   const categories = [
     { id: 'all', label: 'All Documents', icon: '📚' },
-    { id: 'preliminary', label: 'Preliminary Documents', icon: '📋' },
-    { id: 'applications', label: 'Applications and Orders', icon: '⚖️' },
-    { id: 'statements', label: 'Statements and Affidavits', icon: '📝' },
-    { id: 'care', label: 'Care Plans', icon: '👨‍👩‍👧‍👦' },
-    { id: 'experts', label: 'Experts\' Reports', icon: '🔬' },
-    { id: 'other', label: 'Other Documents', icon: '📄' },
+    ...sections.map(section => {
+      const iconMap: { [key: string]: string } = {
+        'preliminary': '📋',
+        'applications': '⚖️',
+        'orders': '⚖️',
+        'statements': '📝',
+        'care': '👨‍👩‍👧‍👦',
+        'experts': '🔬',
+        'disclosure': '💰',
+        'valuations': '🏠',
+        'correspondence': '✉️',
+        'other': '📄'
+      };
+      return {
+        id: section.id,
+        label: section.label,
+        icon: iconMap[section.id] || '📄'
+      };
+    })
   ];
 
   return (

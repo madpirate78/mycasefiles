@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { StoredFile } from '../services/indexedDBService';
+import { VaultType } from '../types/vault';
 import FileUpload from './FileUpload';
 import FilePreviewModal, { FileMetadata } from './FilePreviewModal';
 
@@ -7,9 +8,10 @@ interface DashboardProps {
   uploadedFiles: StoredFile[];
   onFileUpload: (files: FileList) => void;
   onFileUpdate: (fileId: number, metadata: FileMetadata) => void;
+  currentVault: VaultType;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onFileUpdate }) => {
+const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onFileUpdate, currentVault }) => {
   const [selectedFile, setSelectedFile] = useState<StoredFile | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
@@ -17,6 +19,9 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onFi
   const uncategorizedFiles = uploadedFiles.filter(file => 
     !(file as any).section || (file as any).section === 'uncategorized'
   );
+
+  console.log(`📊 Dashboard: ${uploadedFiles.length} total files, ${uncategorizedFiles.length} uncategorized files`);
+  console.log('Uncategorized files:', uncategorizedFiles.map(f => ({ name: f.name, section: (f as any).section })));
 
   const handleFileClick = (file: StoredFile) => {
     setSelectedFile(file);
@@ -121,6 +126,7 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onFi
           setSelectedFile(null);
         }}
         onSave={handleSaveMetadata}
+        vaultType={currentVault}
       />
     </div>
   );

@@ -21,17 +21,25 @@ export function parseDocumentFilename(filename: string): FilenameData {
 /**
  * Get suggested section for document organization
  */
-export function getSuggestedSection(filename: string): string {
+export function getSuggestedSection(filename: string, caseType?: 'child' | 'finance'): string {
   const mapper = new SectionMapper();
-  return mapper.getSuggestedSection(filename);
+  return mapper.getSuggestedSection(filename, caseType);
 }
 
 /**
  * Get suggested metadata for form pre-population
  */
-export function getSuggestedMetadata(filename: string): SuggestedMetadata {
+export function getSuggestedMetadata(filename: string, caseType?: 'child' | 'finance'): SuggestedMetadata {
   const mapper = new SectionMapper();
-  return mapper.getSuggestedMetadata(filename);
+  return mapper.getSuggestedMetadata(filename, caseType);
+}
+
+/**
+ * Detect vault type based on document content and filename
+ */
+export function detectVaultType(filename: string, pdfText?: string): 'child' | 'finance' | null {
+  const mapper = new SectionMapper();
+  return mapper.detectVaultType(filename, pdfText);
 }
 
 /**

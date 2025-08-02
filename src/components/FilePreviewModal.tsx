@@ -1,20 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import ElectronPDFRenderer from './ElectronPDFRenderer';
-import { getSuggestedMetadata, extractFromPDF } from '../services/documentParser';
+import { getSuggestedMetadata, extractFromPDF, detectVaultType } from '../services/documentParser';
 import { formatDateForInput, parseUKDate } from '../utils/dateUtils';
+import { VaultType } from '../types/vault';
+import vaultService from '../services/vaultService';
 
 interface FilePreviewModalProps {
   file: StoredFile | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: (fileId: number, metadata: FileMetadata) => void;
+  vaultType?: VaultType;
 }
 
 export interface FileMetadata {
   name: string;
   section: string;
+  vaultType?: VaultType;
   description?: string;
+  courtReference?: string;
+  applicationDate?: string;
   // Dynamic fields based on section
   [key: string]: string | undefined;
 }
@@ -35,10 +41,11 @@ interface SectionConfig {
   filenameFormat?: (metadata: FileMetadata) => string;
 }
 
-const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose, onSave }) => {
+const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose, onSave, vaultType = 'child' }) => {
   const [metadata, setMetadata] = useState<FileMetadata>({
     name: file?.name || '',
     section: 'other',
+    vaultType: vaultType,
     description: ''
   });
   const [pdfText, setPdfText] = useState<string>('');
@@ -61,6 +68,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     setMetadata({
       name: file?.name || '',
       section: 'other',
+      vaultType: vaultType,
       description: ''
     });
     setPdfText('');
@@ -76,7 +84,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         console.log('Auto-populating metadata for file:', file.name);
         
         // Start with filename-based metadata
-        const suggestedMetadata = getSuggestedMetadata(file.name);
+        const suggestedMetadata = getSuggestedMetadata(file.name, vaultType);
         console.log('Suggested metadata from filename:', suggestedMetadata);
         
         // Try to extract additional info from PDF content
@@ -168,13 +176,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             }
           }
           
-          if (pdfData.documentType && !finalMetadata.documentType) {
+          if (pdfData.documentType && !finalMetadata.documentType && !finalMetadata.orderType) {
             // Map PDF document type to form document type
-            if (pdfData.documentType === 'order') {
-              if (finalMetadata.section === 'child_applications') {
-                finalMetadata.documentType = 'interim_order';
-              } else if (finalMetadata.section === 'financial_applications') {
-                finalMetadata.documentType = 'financial_order';
+            if (pdfData.documentType === 'order' && finalMetadata.section === 'orders') {
+              if (vaultType === 'child') {
+                finalMetadata.orderType = 'interim_order';
+              } else {
+                finalMetadata.orderType = 'financial_order';
               }
             }
             // For applications, filename parsing is usually better
@@ -185,6 +193,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         if (pdfText && pdfText.length > 20) {
           setPdfText(pdfText);
           console.log('📝 PDF text stored (length:', pdfText.length, ')');
+
+          // Auto-detect vault type based on content
+          const detectedVaultType = detectVaultType(file.name, pdfText);
+          if (detectedVaultType) {
+            console.log(`🔍 Auto-detected vault type: ${detectedVaultType}`);
+            finalMetadata.vaultType = detectedVaultType;
+          }
         }
 
         console.log('Final merged metadata:', finalMetadata);
@@ -273,7 +288,11 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     }
   };
 
-  const sectionConfigs: SectionConfig[] = [
+  // Get section configs based on vault type
+  const getSectionConfigs = (): SectionConfig[] => {
+    const currentVaultType = metadata.vaultType || vaultType;
+    if (currentVaultType === 'child') {
+      return [
     {
       id: 'preliminary',
       label: 'Preliminary Documents',
@@ -300,8 +319,8 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       }
     },
     {
-      id: 'child_applications',
-      label: 'Child Matters - Applications and Orders',
+      id: 'applications',
+      label: 'Applications',
       fields: [
         { key: 'documentType', label: 'Document Type', type: 'select', required: true,
           options: [
@@ -329,29 +348,26 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       }
     },
     {
-      id: 'financial_applications',
-      label: 'Financial Matters - Applications and Orders',
+      id: 'orders',
+      label: 'Orders',
       fields: [
-        { key: 'documentType', label: 'Document Type', type: 'select', required: true,
+        { key: 'orderType', label: 'Order Type', type: 'select', required: true,
           options: [
-            { value: 'form_a', label: 'Form A - Financial Application' },
-            { value: 'form_e', label: 'Form E - Financial Statement' },
-            { value: 'd81', label: 'D81 - Statement of Information' },
-            { value: 'financial_dispute_resolution', label: 'FDR - Financial Dispute Resolution' },
-            { value: 'other_financial_application', label: 'Other Financial Application' },
-            { value: 'financial_order', label: 'Financial Order' },
+            { value: 'interim_order', label: 'Interim Order' },
+            { value: 'final_order', label: 'Final Order' },
+            { value: 'directions_order', label: 'Directions Order' },
             { value: 'consent_order', label: 'Consent Order' },
-            { value: 'clean_break_order', label: 'Clean Break Order' },
-            { value: 'pension_sharing_order', label: 'Pension Sharing Order' }
+            { value: 'prohibited_steps_order', label: 'Prohibited Steps Order' },
+            { value: 'specific_issue_order', label: 'Specific Issue Order' }
           ]
         },
-        { key: 'reference', label: 'Reference', type: 'text', placeholder: 'e.g., FA-2024-001', required: true },
-        { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., Smith' },
-        { key: 'date', label: 'Date', type: 'date', required: true }
+        { key: 'courtReference', label: 'Court Reference', type: 'text', placeholder: 'e.g., AB12C34567', required: true },
+        { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., HHJ Smith' },
+        { key: 'date', label: 'Order Date', type: 'date', required: true }
       ],
       filenameFormat: (meta) => {
-        const parts = ['financial', meta.documentType || 'document'];
-        if (meta.reference) parts.push(meta.reference.replace(/\s+/g, '_'));
+        const parts = ['order', meta.orderType || 'document'];
+        if (meta.courtReference) parts.push(meta.courtReference.replace(/\s+/g, '_'));
         if (meta.judgeName) parts.push(meta.judgeName.replace(/\s+/g, '_'));
         if (meta.date) parts.push(meta.date);
         return parts.join('_');
@@ -441,16 +457,188 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       }
     }
   ];
+    } else {
+      // Finance case sections
+      return [
+        {
+          id: 'preliminary',
+          label: 'Preliminary Documents',
+          fields: [
+            { key: 'documentType', label: 'Document Type', type: 'select', required: true,
+              options: [
+                { value: 'case_summary', label: 'Case Summary' },
+                { value: 'statement_of_issues', label: 'Statement of Issues' },
+                { value: 'position_statements', label: 'Position Statements' },
+                { value: 'chronology', label: 'Chronology' },
+                { value: 'skeleton_arguments', label: 'Skeleton Arguments' },
+                { value: 'list_essential_reading', label: 'List of Essential Reading' }
+              ]
+            },
+            { key: 'date', label: 'Date Filed', type: 'date' },
+            { key: 'reference', label: 'Reference Number', type: 'text', placeholder: 'e.g., REF001' }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['preliminary'];
+            if (meta.documentType) parts.push(meta.documentType);
+            if (meta.reference) parts.push(meta.reference);
+            if (meta.date) parts.push(meta.date);
+            return parts.join('_');
+          }
+        },
+        {
+          id: 'applications',
+          label: 'Financial Applications',
+          fields: [
+            { key: 'documentType', label: 'Document Type', type: 'select', required: true,
+              options: [
+                { value: 'form_a', label: 'Form A - Financial Application' },
+                { value: 'form_e', label: 'Form E - Financial Statement' },
+                { value: 'd81', label: 'D81 - Statement of Information' },
+                { value: 'financial_dispute_resolution', label: 'FDR - Financial Dispute Resolution' },
+                { value: 'other_financial_application', label: 'Other Financial Application' }
+              ]
+            },
+            { key: 'reference', label: 'Reference', type: 'text', placeholder: 'e.g., FA-2024-001', required: true },
+            { key: 'date', label: 'Date', type: 'date', required: true }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['financial', meta.documentType || 'document'];
+            if (meta.reference) parts.push(meta.reference.replace(/\s+/g, '_'));
+            if (meta.date) parts.push(meta.date);
+            return parts.join('_');
+          }
+        },
+        {
+          id: 'orders',
+          label: 'Financial Orders',
+          fields: [
+            { key: 'orderType', label: 'Order Type', type: 'select', required: true,
+              options: [
+                { value: 'financial_order', label: 'Financial Order' },
+                { value: 'consent_order', label: 'Consent Order' },
+                { value: 'clean_break_order', label: 'Clean Break Order' },
+                { value: 'pension_sharing_order', label: 'Pension Sharing Order' },
+                { value: 'maintenance_order', label: 'Maintenance Order' },
+                { value: 'property_adjustment_order', label: 'Property Adjustment Order' }
+              ]
+            },
+            { key: 'courtReference', label: 'Court Reference', type: 'text', placeholder: 'e.g., FD23D00123', required: true },
+            { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., DJ Smith' },
+            { key: 'date', label: 'Order Date', type: 'date', required: true }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['financial_order', meta.orderType || 'document'];
+            if (meta.courtReference) parts.push(meta.courtReference.replace(/\s+/g, '_'));
+            if (meta.judgeName) parts.push(meta.judgeName.replace(/\s+/g, '_'));
+            if (meta.date) parts.push(meta.date);
+            return parts.join('_');
+          }
+        },
+        {
+          id: 'statements',
+          label: 'Statements and Affidavits',
+          fields: [
+            { key: 'personName', label: 'Person Name', type: 'text', placeholder: 'Name of person making statement', required: true },
+            { key: 'courtReference', label: 'Court Reference Number', type: 'text', placeholder: 'e.g., FD23D00123', required: true },
+            { key: 'date', label: 'Date', type: 'date' }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['statement'];
+            if (meta.personName) parts.push(meta.personName.replace(/\s+/g, '_'));
+            if (meta.courtReference) parts.push(meta.courtReference);
+            if (meta.date) parts.push(meta.date);
+            return parts.join('_');
+          }
+        },
+        {
+          id: 'disclosure',
+          label: 'Financial Disclosure',
+          fields: [
+            { key: 'disclosureType', label: 'Disclosure Type', type: 'select', required: true,
+              options: [
+                { value: 'bank_statements', label: 'Bank Statements' },
+                { value: 'payslips', label: 'Payslips' },
+                { value: 'tax_returns', label: 'Tax Returns' },
+                { value: 'business_accounts', label: 'Business Accounts' },
+                { value: 'pension_statements', label: 'Pension Statements' },
+                { value: 'investment_portfolio', label: 'Investment Portfolio' },
+                { value: 'other_disclosure', label: 'Other Financial Disclosure' }
+              ]
+            },
+            { key: 'period', label: 'Period Covered', type: 'text', placeholder: 'e.g., Jan-Dec 2023' },
+            { key: 'date', label: 'Date Provided', type: 'date', required: true }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['disclosure', meta.disclosureType || 'document'];
+            if (meta.period) parts.push(meta.period.replace(/\s+/g, '_'));
+            if (meta.date) parts.push(meta.date);
+            return parts.join('_');
+          }
+        },
+        {
+          id: 'valuations',
+          label: 'Property Valuations',
+          fields: [
+            { key: 'propertyAddress', label: 'Property Address', type: 'text', placeholder: 'Property address', required: true },
+            { key: 'valuationType', label: 'Valuation Type', type: 'select', required: true,
+              options: [
+                { value: 'property_valuation', label: 'Property Valuation' },
+                { value: 'pension_valuation', label: 'Pension Valuation' },
+                { value: 'business_valuation', label: 'Business Valuation' },
+                { value: 'contents_valuation', label: 'Contents Valuation' },
+                { value: 'other_valuation', label: 'Other Valuation' }
+              ]
+            },
+            { key: 'valuer', label: 'Valuer Name', type: 'text', placeholder: 'Name of valuer/company' },
+            { key: 'valuationDate', label: 'Valuation Date', type: 'date', required: true },
+            { key: 'value', label: 'Valuation Amount', type: 'text', placeholder: '£000,000' }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['valuation', meta.valuationType || 'property'];
+            if (meta.propertyAddress) parts.push(meta.propertyAddress.replace(/\s+/g, '_').substring(0, 20));
+            if (meta.valuationDate) parts.push(meta.valuationDate);
+            return parts.join('_');
+          }
+        },
+        {
+          id: 'correspondence',
+          label: 'Correspondence',
+          fields: [
+            { key: 'sender', label: 'Sender', type: 'text', placeholder: 'Who sent this', required: true },
+            { key: 'recipient', label: 'Recipient', type: 'text', placeholder: 'Who received this' },
+            { key: 'subject', label: 'Subject', type: 'text', placeholder: 'Subject matter' },
+            { key: 'date', label: 'Date', type: 'date', required: true }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['correspondence'];
+            if (meta.sender) parts.push(meta.sender.replace(/\s+/g, '_'));
+            if (meta.subject) parts.push(meta.subject.replace(/\s+/g, '_').substring(0, 20));
+            if (meta.date) parts.push(meta.date);
+            return parts.join('_');
+          }
+        },
+        {
+          id: 'other',
+          label: 'Other Documents',
+          fields: [
+            { key: 'documentType', label: 'Document Type', type: 'text', placeholder: 'Type of document' },
+            { key: 'date', label: 'Date', type: 'date' },
+            { key: 'reference', label: 'Reference', type: 'text', placeholder: 'Any reference number' }
+          ],
+          filenameFormat: (meta) => {
+            const parts = ['other'];
+            if (meta.documentType) parts.push(meta.documentType.replace(/\s+/g, '_'));
+            if (meta.reference) parts.push(meta.reference);
+            if (meta.date) parts.push(meta.date);
+            return parts.join('_');
+          }
+        }
+      ];
+    }
+  };
 
-  const sections = [
-    { id: 'preliminary', label: 'Preliminary Documents' },
-    { id: 'child_applications', label: 'Child Matters - Applications and Orders' },
-    { id: 'financial_applications', label: 'Financial Matters - Applications and Orders' },
-    { id: 'statements', label: 'Statements and Affidavits' },
-    { id: 'care', label: 'Care Plans' },
-    { id: 'experts', label: 'Experts\' Reports' },
-    { id: 'other', label: 'Other Documents' }
-  ];
+  const sectionConfigs = getSectionConfigs();
+  const sections = vaultService.getVaultSections(metadata.vaultType || vaultType);
   const currentSectionConfig = sectionConfigs.find(config => config.id === metadata.section);
 
   if (!isOpen || !file) return null;
@@ -593,6 +781,52 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           <div className="metadata-section">
             <h3>Document Information</h3>
             
+            <div className="form-group vault-type-selector">
+              <label>Document Type *</label>
+              <div className="vault-type-options">
+                <label className="radio-option">
+                  <input
+                    type="radio"
+                    name="vaultType"
+                    value="child"
+                    checked={metadata.vaultType === 'child'}
+                    onChange={(e) => {
+                      const newVaultType = e.target.value as VaultType;
+                      setMetadata({
+                        ...metadata, 
+                        vaultType: newVaultType,
+                        section: 'other' // Reset section when vault type changes
+                      });
+                    }}
+                  />
+                  <span className="radio-label">
+                    <span className="radio-icon">👨‍👩‍👧‍👦</span>
+                    Child Matters
+                  </span>
+                </label>
+                <label className="radio-option">
+                  <input
+                    type="radio"
+                    name="vaultType"
+                    value="finance"
+                    checked={metadata.vaultType === 'finance'}
+                    onChange={(e) => {
+                      const newVaultType = e.target.value as VaultType;
+                      setMetadata({
+                        ...metadata, 
+                        vaultType: newVaultType,
+                        section: 'other' // Reset section when vault type changes
+                      });
+                    }}
+                  />
+                  <span className="radio-label">
+                    <span className="radio-icon">💰</span>
+                    Financial Matters
+                  </span>
+                </label>
+              </div>
+            </div>
+
             <div className="form-group">
               <label>Document Section *</label>
               <select 

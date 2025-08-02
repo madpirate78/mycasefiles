@@ -232,14 +232,20 @@ body {
 }
 
 .form-group {
-  margin-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
 }
 
 .form-group label {
   display: block;
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 0;
   font-weight: 500;
   color: var(--text-primary);
+  min-width: 120px;
+  flex-shrink: 0;
+  font-size: 14px;
 }
 
 .filename-hint {
@@ -758,7 +764,7 @@ body {
 
 .form-input,
 .form-textarea {
-  width: 100%;
+  flex: 1;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--medium-gray);
   border-radius: var(--radius-sm);
@@ -940,6 +946,155 @@ body {
   pointer-events: none;
 }
 
+/* Vault Type Selector Styles */
+.vault-type-selector {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.vault-type-selector label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.vault-type-options {
+  display: flex;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px 12px;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  background: white;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.radio-option:hover {
+  border-color: #4a90e2;
+  background: #f0f7ff;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  margin-right: 6px;
+}
+
+.radio-option input[type="radio"]:checked + .radio-label {
+  color: #4a90e2;
+  font-weight: 600;
+}
+
+.radio-option:has(input[type="radio"]:checked) {
+  border-color: #4a90e2;
+  background: #f0f7ff;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.radio-icon {
+  font-size: 16px;
+}
+
+/* Upload Notification */
+.upload-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 1001;
+  animation: slideInRight 0.3s ease;
+  max-width: 350px;
+  font-weight: 500;
+}
+
+.upload-notification.success {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.upload-notification.warning {
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+  color: #856404;
+}
+
+.upload-notification.error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.notification-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.notification-text {
+  font-size: 14px;
+  flex: 1;
+}
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s;
+  color: inherit;
+}
+
+.upload-notification.success .notification-close:hover {
+  background-color: rgba(21, 87, 36, 0.1);
+}
+
+.upload-notification.warning .notification-close:hover {
+  background-color: rgba(133, 100, 4, 0.1);
+}
+
+.upload-notification.error .notification-close:hover {
+  background-color: rgba(114, 28, 36, 0.1);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 /* Modal Styles - Full Screen Layout */
 .modal-overlay {
   position: fixed;
@@ -1069,13 +1224,30 @@ body {
 }
 
 .form-select {
-  width: 100%;
+  flex: 1;
   padding: var(--spacing-sm) var(--spacing-md);
   border: 1px solid var(--medium-gray);
   border-radius: var(--radius-sm);
   font-size: 14px;
   background-color: var(--white);
   cursor: pointer;
+}
+
+/* Special form group layouts */
+.form-group.vertical {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.form-group.vertical label {
+  margin-bottom: var(--spacing-xs);
+  min-width: auto;
+}
+
+.form-group.vertical .form-input,
+.form-group.vertical .form-textarea,
+.form-group.vertical .form-select {
+  width: 100%;
 }
 
 .filename-hint {

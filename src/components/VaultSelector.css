@@ -1,0 +1,45 @@
+.vault-selector {
+  display: flex;
+  gap: 8px;
+  background: white;
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid #e1e4e8;
+}
+
+.vault-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #586069;
+  transition: all 0.2s;
+}
+
+.vault-btn:hover {
+  background: #f5f7fa;
+  color: #24292e;
+}
+
+.vault-btn.active {
+  background: #4a90e2;
+  color: white;
+}
+
+.vault-btn.active .vault-icon {
+  filter: brightness(2);
+}
+
+.vault-icon {
+  font-size: 18px;
+}
+
+.vault-label {
+  white-space: nowrap;
+}

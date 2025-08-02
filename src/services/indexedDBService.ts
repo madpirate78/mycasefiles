@@ -1,7 +1,7 @@
 // src/services/indexedDBService.ts
 
 const DB_NAME = 'MyCaseFilesDB';
-const DB_VERSION = 1;
+const DB_VERSION = 3; // Increased for new schema
 const STORE_NAME = 'documents';
 
 let db: IDBDatabase;
@@ -18,6 +18,9 @@ export interface StoredFile {
   description?: string;
   originalName?: string;
   addedDate?: string;
+  vaultType?: 'child' | 'finance'; // Which vault this file belongs to
+  applicationDate?: string; // Date of the application this file relates to
+  courtReference?: string; // Court reference for this specific document
 }
 
 export const openDB = (): Promise<IDBDatabase> => {
@@ -43,7 +46,7 @@ export const openDB = (): Promise<IDBDatabase> => {
   });
 };
 
-export const addFile = (file: File): Promise<string> => {
+export const addFile = (file: File, vaultType?: 'child' | 'finance'): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (!db) {
       reject("Database not open.");
@@ -57,6 +60,7 @@ export const addFile = (file: File): Promise<string> => {
       type: file.type,
       data: file,
       section: 'uncategorized',
+      vaultType: vaultType || 'child', // Default to child vault
       addedDate: new Date().toISOString()
     };
     const request = store.add(fileData);
@@ -72,7 +76,7 @@ export const addFile = (file: File): Promise<string> => {
   });
 };
 
-export const getFiles = (): Promise<StoredFile[]> => {
+export const getFiles = (vaultType?: 'child' | 'finance'): Promise<StoredFile[]> => {
   return new Promise((resolve, reject) => {
     if (!db) {
       reject("Database not open.");
@@ -83,7 +87,17 @@ export const getFiles = (): Promise<StoredFile[]> => {
     const request = store.getAll();
 
     request.onsuccess = () => {
-      resolve(request.result as StoredFile[]);
+      let files = request.result as StoredFile[];
+      
+      // Filter by vaultType if provided
+      if (vaultType) {
+        files = files.filter(file => {
+          // Include files with matching vault type OR files without vault type (legacy files)
+          return file.vaultType === vaultType || !file.vaultType;
+        });
+      }
+      
+      resolve(files);
     };
 
     request.onerror = (event: Event) => {
@@ -129,6 +143,28 @@ export const updateFile = (fileId: number, updates: Partial<StoredFile>): Promis
     getRequest.onerror = (event: Event) => {
       console.error("Error getting file:", (event.target as IDBRequest).error?.message);
       reject("Error getting file");
+    };
+  });
+};
+
+export const clearDatabase = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject("Database not open.");
+      return;
+    }
+    const transaction = db.transaction([STORE_NAME], 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.clear();
+
+    request.onsuccess = () => {
+      console.log("🗑️ Database cleared successfully");
+      resolve("Database cleared successfully");
+    };
+
+    request.onerror = (event: Event) => {
+      console.error("Error clearing database:", (event.target as IDBRequest).error?.message);
+      reject("Error clearing database");
     };
   });
 };

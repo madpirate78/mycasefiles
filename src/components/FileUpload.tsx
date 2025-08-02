@@ -34,6 +34,10 @@ function FileUpload({ onFileUpload }: FileUploadProps) {
     }
   };
 
+  const handleUploadClick = () => {
+    console.log("📤 UPLOAD BUTTON CLICKED: Opening file dialog...");
+  };
+
   return (
     <div
       id="form-file-upload"
@@ -52,6 +56,7 @@ function FileUpload({ onFileUpload }: FileUploadProps) {
         id="label-file-upload"
         htmlFor="input-file-upload"
         className={dragActive ? "drag-active" : ""}
+        onClick={handleUploadClick}
       >
         <div>
           <p>Drag and drop your files here or</p>

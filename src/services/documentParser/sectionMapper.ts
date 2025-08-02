@@ -1,13 +1,14 @@
 import { FilenameData, SuggestedMetadata } from './types';
 import { FilenameParser } from './filenameParser';
+import { CaseType } from '../../types/case';
 
 export class SectionMapper {
   private filenameParser = new FilenameParser();
 
   /**
-   * Get suggested section based on filename analysis
+   * Get suggested section based on filename analysis and case type
    */
-  getSuggestedSection(filename: string): string {
+  getSuggestedSection(filename: string, caseType?: CaseType): string {
     const data = this.filenameParser.parse(filename);
     
     // Map document types and form types to sections
@@ -15,18 +16,13 @@ export class SectionMapper {
       const formType = data.formType.toUpperCase();
       
       // Child arrangements forms
-      if (['C100', 'C1A', 'C78', 'C79'].includes(formType)) {
-        return 'child_applications';
-      }
-      
-      // Domestic violence forms  
-      if (['FL401', 'FL402', 'FL403'].includes(formType)) {
-        return 'child_applications';
+      if (['C100', 'C1A', 'C78', 'C79', 'FL401', 'FL402', 'FL403'].includes(formType)) {
+        return 'applications';
       }
       
       // Financial forms
       if (['FORM A', 'FORM E', 'D81'].includes(formType)) {
-        return 'financial_applications';
+        return 'applications';
       }
     }
     
@@ -45,8 +41,12 @@ export class SectionMapper {
       return 'care';
     }
 
-    if (lowerName.includes('financial') || lowerName.includes('form a') || lowerName.includes('form e')) {
-      return 'financial_applications';
+    if (caseType === 'finance' && (lowerName.includes('disclosure') || lowerName.includes('form e'))) {
+      return 'disclosure';
+    }
+    
+    if (lowerName.includes('valuation') || lowerName.includes('property') || lowerName.includes('pension')) {
+      return 'valuations';
     }
 
     // Check for preliminary document keywords
@@ -55,18 +55,70 @@ export class SectionMapper {
       return 'preliminary';
     }
     
-    // Default to child applications for court documents
-    if (data.documentType === 'application' || data.documentType === 'order') {
-      return 'child_applications';
+    // Default to applications for court documents
+    if (data.documentType === 'application') {
+      return 'applications';
+    }
+    
+    if (data.documentType === 'order') {
+      return 'orders';
     }
     
     return 'other';
   }
 
   /**
-   * Get suggested metadata based on filename analysis
+   * Detect vault type based on document content and filename
    */
-  getSuggestedMetadata(filename: string): SuggestedMetadata {
+  detectVaultType(filename: string, pdfText?: string): 'child' | 'finance' | null {
+    const lowerName = filename.toLowerCase();
+    const lowerText = pdfText?.toLowerCase() || '';
+    
+    // Child matter indicators
+    const childKeywords = [
+      'children act', 'child arrangements', 'contact', 'residence', 
+      'prohibited steps', 'specific issue', 'parental responsibility',
+      'c100', 'fl401', 'non-molestation', 'occupation order', 'cafcass'
+    ];
+    
+    // Finance matter indicators  
+    const financeKeywords = [
+      'matrimonial causes act', 'financial remedy', 'ancillary relief',
+      'form a', 'form e', 'financial dispute resolution', 'fdr',
+      'pension sharing', 'clean break', 'maintenance', 'property adjustment',
+      'financial order', 'matrimonial'
+    ];
+    
+    // Check filename first
+    if (childKeywords.some(keyword => lowerName.includes(keyword))) {
+      return 'child';
+    }
+    
+    if (financeKeywords.some(keyword => lowerName.includes(keyword))) {
+      return 'finance';
+    }
+    
+    // Check PDF content if available
+    if (pdfText) {
+      const childScore = childKeywords.filter(keyword => lowerText.includes(keyword)).length;
+      const financeScore = financeKeywords.filter(keyword => lowerText.includes(keyword)).length;
+      
+      if (childScore > financeScore && childScore > 0) {
+        return 'child';
+      }
+      
+      if (financeScore > childScore && financeScore > 0) {
+        return 'finance';
+      }
+    }
+    
+    return null; // Cannot determine
+  }
+
+  /**
+   * Get suggested metadata based on filename analysis and case type
+   */
+  getSuggestedMetadata(filename: string, caseType?: CaseType): SuggestedMetadata {
     console.log('Parsing filename:', filename);
     const data = this.filenameParser.parse(filename);
     console.log('Parsed data:', data);
@@ -74,7 +126,7 @@ export class SectionMapper {
     const metadata: SuggestedMetadata = {};
     
     // Set suggested section
-    metadata.section = this.getSuggestedSection(filename);
+    metadata.section = this.getSuggestedSection(filename, caseType);
     console.log('Suggested section:', metadata.section);
     
     // Set document type if found
