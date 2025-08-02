@@ -38,12 +38,14 @@ A comprehensive legal case management desktop application designed for self-repr
 
 ### Document Vault
 - **Enhanced Document View**: 🔥 **NEW** - Compact row-based layout with hyperlink-style titles and metadata
+- **Document Status Indicators**: 🔥 **NEW** - Visual badges showing page selections (📄 5/10), metadata completion (✓), and OCR status (🔍)
+- **Page Selection Interface**: 🔥 **NEW** - Carousel-style page pruning with 400×600px PDF previews and mouse wheel horizontal scrolling
 - **Advanced Filtering**: Filter documents by bundle section with accurate file counts
 - **Smart Search**: Search across file names, descriptions, judge names, and references
 - **Flexible Sorting**: Sort by date (newest first), name, type, or section
 - **Section Indicators**: Visual badges showing which bundle section each document belongs to
 - **Inline Metadata**: See judge names, court references, and dates at a glance
-- **Quick Actions**: View, Edit, and Delete documents with confirmation dialogs
+- **Quick Actions**: Page Select, Edit, and Delete documents with confirmation dialogs
 - **Empty State Handling**: Different messages for empty vault vs. no search results
 
 ### Desktop Experience
@@ -77,7 +79,7 @@ A comprehensive legal case management desktop application designed for self-repr
    ```bash
    npm install
    ```
-   This automatically sets up PDF.js assets and Electron dependencies.
+   This automatically sets up Electron dependencies and PDF processing libraries.
 
 3. **Launch desktop application**
    ```bash
@@ -122,13 +124,12 @@ Opens [http://localhost:3000](http://localhost:3000) for UI development only. **
 - **`npm run electron-dev`** - Electron development with hot reload (connects to React dev server)
 
 **Production:**
-- **`npm run build`** - Build React app with PDF.js assets
+- **`npm run build`** - Build React app for production
 - **`npm run build-electron`** - Build and package Electron app
 - **`npm run dist`** - Create distributable desktop packages (Windows/macOS/Linux)
 
 **Utilities:**
 - **`npm test`** - Run test suite
-- **`npm run setup-pdfjs`** - Manually copy PDF.js assets to public directory
 
 ## 🏗️ Project Structure
 
@@ -156,17 +157,16 @@ src/
 │       └── types.ts            # TypeScript interfaces
 ├── types/
 │   └── vault.ts                # Vault system TypeScript interfaces
-├── pdfConfig.ts                # PDF.js configuration for offline use
-├── pdfWorker.ts                # PDF.js worker setup
+├── pdfConfig.ts                # PDF rendering configuration  
+├── pdfWorker.ts                # PDF worker setup
 └── App.css                     # Application styling with vault selector and compact forms
 
 public/
 ├── electron.js                 # Electron main process with PDF parsing
 ├── preload.js                  # Secure IPC bridge for renderer
-└── pdfjs-dist/                 # Local PDF.js assets for offline functionality
-    ├── build/                  # PDF.js core files and workers
-    ├── cmaps/                  # Character mapping files (170+ files)
-    └── standard_fonts/         # Standard PDF fonts
+├── favicon.ico                 # Application icon
+├── index.html                  # Main HTML template
+└── manifest.json               # Web app manifest
 
 docs/
 ├── UI_SPEC.md                  # Comprehensive UI specification
@@ -196,8 +196,6 @@ docs/
 ### PDF Processing & Intelligence
 - **pdf-parse**: Server-side PDF text extraction in Electron main process
 - **react-pdf**: PDF viewing and rendering in React frontend
-- **PDF.js**: High-quality rendering engine with local assets
-- **Offline-first**: All PDF.js dependencies served locally
 - **Intelligent Parsing**: Two-stage extraction (filename → PDF content → section assignment)
 
 ### Document Intelligence
@@ -280,7 +278,7 @@ docs/
 - **Dynamic Document Organization**: Section-specific metadata fields for UK family court structure
 - **Carousel PDF Navigation**: Floating buttons around PDF for intuitive page control
 - **Full-Screen PDF View**: Maximized preview area with controls panel layout
-- **High-Quality PDF Rendering**: Offline-first PDF.js integration with local assets
+- **High-Quality PDF Rendering**: react-pdf integration for document viewing
 - **Secure IPC Architecture**: Safe communication between main and renderer processes
 - **Cross-Platform Support**: Windows, macOS, and Linux desktop packaging
 
@@ -292,8 +290,10 @@ docs/
 - **Email Integration**: Import functionality for court correspondence with vault assignment
 - **Detailed Metadata Enhancement**: Secondary workflow for adding comprehensive document details after section assignment
 
-### 📅 Planned Features
-- **PDF Page Pruning**: Interactive PDF viewer allowing users to select specific pages to include/exclude from documents for court bundles
+### ✅ Completed Features
+- **PDF Page Pruning**: ✅ **COMPLETE** - Carousel-style interface for manual page selection with real PDF previews and mouse wheel scrolling
+- **Document Status Indicators**: ✅ **COMPLETE** - Visual badges showing page selections, metadata completion, and OCR status in document vault
+### 🚧 In Development
 - **Advanced Bundle Generation**: One-click court bundle creation with automatic page numbering, table of contents, and professional formatting
 - **Enhanced Bundle Builder**: Visual interface for organizing sections and reordering documents within court bundles
 - **Advanced Document Intelligence**: Full court order parsing with dates and conditions
@@ -301,6 +301,10 @@ docs/
 - **Search & Filter**: Advanced search across document text content
 - **Redaction Tools**: Privacy protection for sensitive information
 - **Backup & Sync**: Cloud storage integration for document safety
+
+### 📅 Planned Features
+- **Server-Side PDF Thumbnails**: Real PDF page thumbnails via Electron main process using pdf-poppler or similar
+- **Enhanced Page Selection**: Per-page text extraction and improved blank detection using server-side PDF processing
 
 ## 🔄 Git Workflow
 

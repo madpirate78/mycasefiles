@@ -4,12 +4,14 @@ import { formatStoredDate } from '../utils/dateUtils';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
 import FilePreviewModal, { FileWithOCR } from './FilePreviewModal';
+import PagePruneModal from './PagePruneModal';
 
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
   onFileUpload: (files: FileList) => void;
   onFileDelete?: (fileId: number) => void;
   onFileEdit?: (fileId: number, metadata: FileWithOCR) => void;
+  onFileUpdate?: (fileId: number, selectedPages: number[], totalPages: number) => void;
   currentVault: VaultType;
 }
 
@@ -21,13 +23,15 @@ interface ExtendedFile extends StoredFile {
   date?: string;
 }
 
-const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, onFileDelete, onFileEdit, currentVault }) => {
+const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, onFileDelete, onFileEdit, onFileUpdate, currentVault }) => {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
   const [editingFile, setEditingFile] = useState<StoredFile | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [pageViewFile, setPageViewFile] = useState<StoredFile | null>(null);
+  const [isPagePruneModalOpen, setIsPagePruneModalOpen] = useState(false);
 
   // Get vault-specific sections
   const sections = vaultService.getVaultSections(currentVault);
@@ -59,6 +63,31 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
   const handleEditClose = () => {
     setIsEditModalOpen(false);
     setEditingFile(null);
+  };
+
+  const handleViewClick = (file: StoredFile) => {
+    // Only open page prune modal for PDF files
+    if (file.type.includes('pdf')) {
+      setPageViewFile(file);
+      setIsPagePruneModalOpen(true);
+    } else {
+      // For non-PDF files, could show a different viewer or download
+      console.log('Viewing non-PDF file:', file.name);
+      // TODO: Implement non-PDF file viewing
+    }
+  };
+
+  const handlePagePruneClose = () => {
+    setIsPagePruneModalOpen(false);
+    setPageViewFile(null);
+  };
+
+  const handlePagePruneSave = (fileId: number, selectedPages: number[], totalPages: number) => {
+    if (onFileUpdate) {
+      onFileUpdate(fileId, selectedPages, totalPages);
+    }
+    setIsPagePruneModalOpen(false);
+    setPageViewFile(null);
   };
 
   // Filter and sort files
@@ -219,7 +248,38 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                     </div>
                     <div className="doc-content">
                       <div className="doc-title-line">
-                        <a href="#" className="doc-title">{file.name}</a>
+                        <div className="doc-title-with-indicators">
+                          <a href="#" className="doc-title">{file.name}</a>
+                          <div className="doc-status-indicators">
+                            {/* Page selection indicator */}
+                            {file.selectedPages && file.selectedPages.length > 0 && file.totalPages && (
+                              <span 
+                                className="status-indicator page-selection"
+                                title={`${file.selectedPages.length}/${file.totalPages} pages selected`}
+                              >
+                                📄 {file.selectedPages.length}/{file.totalPages}
+                              </span>
+                            )}
+                            {/* Metadata populated indicator */}
+                            {(file.judgeName || file.orderReference || file.courtReference || file.personName) && (
+                              <span 
+                                className="status-indicator metadata-filled"
+                                title="Metadata populated"
+                              >
+                                ✓
+                              </span>
+                            )}
+                            {/* OCR performed indicator */}
+                            {file.ocrPerformed && (
+                              <span 
+                                className="status-indicator ocr-performed"
+                                title="OCR text extracted"
+                              >
+                                🔍
+                              </span>
+                            )}
+                          </div>
+                        </div>
                         <div className="doc-section-indicator">
                           <span className="section-icon">{categoryIcon}</span>
                           <span className="section-label">{sectionLabel}</span>
@@ -240,7 +300,13 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                       </div>
                     </div>
                     <div className="doc-actions-inline">
-                      <button className="link-btn">View</button>
+                      <button 
+                        className="link-btn"
+                        onClick={() => handleViewClick(file)}
+                        title={file.type.includes('pdf') ? 'View and select pages for bundle' : 'View document'}
+                      >
+                        {file.type.includes('pdf') ? 'Page Select' : 'View'}
+                      </button>
                       <button 
                         className="link-btn"
                         onClick={() => handleEditClick(file)}
@@ -270,6 +336,14 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
         onClose={handleEditClose}
         onSave={handleEditSave}
         vaultType={currentVault}
+      />
+
+      {/* Page Pruning Modal */}
+      <PagePruneModal
+        file={pageViewFile}
+        isOpen={isPagePruneModalOpen}
+        onClose={handlePagePruneClose}
+        onSave={handlePagePruneSave}
       />
     </div>
   );

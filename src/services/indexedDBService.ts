@@ -49,6 +49,10 @@ export interface StoredFile {
   // Auto-population tracking
   autopopulationPerformed?: boolean; // Whether auto-population has been run on this file
   
+  // Page selection for court bundle preparation
+  selectedPages?: number[]; // Array of selected page numbers (1-indexed)
+  totalPages?: number; // Total number of pages in the document
+  
   // OCR-related fields
   ocrPerformed?: boolean; // Whether OCR has been run on this file
   ocrText?: string; // Extracted OCR text

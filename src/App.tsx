@@ -177,6 +177,19 @@ function App() {
     }
   };
 
+  const handlePageSelectionUpdate = async (fileId: number, selectedPages: number[], totalPages: number) => {
+    try {
+      await updateFile(fileId, {
+        selectedPages: selectedPages,
+        totalPages: totalPages
+      });
+      fetchFilesFromDB(); // Refresh the files list
+      console.log(`📄 Updated page selection for file ${fileId}: ${selectedPages.length}/${totalPages} pages selected`);
+    } catch (error) {
+      console.error('Error updating page selection:', error);
+    }
+  };
+
   const handleFolderImport = async (files: FileList, mappings: Array<{ file: File; sectionId: string }>) => {
     
     let successCount = 0;
@@ -302,7 +315,7 @@ function App() {
       case 'bundles':
         return <BundleList uploadedFiles={uploadedFiles} />;
       case 'documents':
-        return <DocumentVault uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileDelete={handleFileDelete} onFileEdit={handleFileUpdate} currentVault={currentVault} />;
+        return <DocumentVault uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileDelete={handleFileDelete} onFileEdit={handleFileUpdate} onFileUpdate={handlePageSelectionUpdate} currentVault={currentVault} />;
       case 'emails':
         return <EmailManager onFileUpload={handleFileUpload} />;
       case 'import':
