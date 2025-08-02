@@ -71,6 +71,7 @@ export class SectionMapper {
    * Detect vault type based on document content and filename
    */
   detectVaultType(filename: string, pdfText?: string): 'child' | 'finance' | null {
+    console.log('🔍 Detecting vault type for:', filename);
     const lowerName = filename.toLowerCase();
     const lowerText = pdfText?.toLowerCase() || '';
     
@@ -78,7 +79,12 @@ export class SectionMapper {
     const childKeywords = [
       'children act', 'child arrangements', 'contact', 'residence', 
       'prohibited steps', 'specific issue', 'parental responsibility',
-      'c100', 'fl401', 'non-molestation', 'occupation order', 'cafcass'
+      'c100', 'fl401', 'non-molestation', 'occupation order', 'cafcass',
+      'child welfare', 'lives with', 'spends time with', 'otherwise has contact',
+      'domestic abuse', 'family court', 'child arrangements order',
+      'prohibited steps order', 'specific issue order', 'parental responsibility order',
+      'contact order', 'residence order', 'section 8', 'welfare of the child',
+      'primary carer', 'shared care', 'holiday contact', 'indirect contact'
     ];
     
     // Finance matter indicators  
@@ -90,28 +96,43 @@ export class SectionMapper {
     ];
     
     // Check filename first
-    if (childKeywords.some(keyword => lowerName.includes(keyword))) {
+    const filenameChildMatches = childKeywords.filter(keyword => lowerName.includes(keyword));
+    const filenameFinanceMatches = financeKeywords.filter(keyword => lowerName.includes(keyword));
+    
+    if (filenameChildMatches.length > 0) {
+      console.log('🎯 Child vault detected from filename:', filenameChildMatches);
       return 'child';
     }
     
-    if (financeKeywords.some(keyword => lowerName.includes(keyword))) {
+    if (filenameFinanceMatches.length > 0) {
+      console.log('🎯 Finance vault detected from filename:', filenameFinanceMatches);
       return 'finance';
     }
     
     // Check PDF content if available
     if (pdfText) {
-      const childScore = childKeywords.filter(keyword => lowerText.includes(keyword)).length;
-      const financeScore = financeKeywords.filter(keyword => lowerText.includes(keyword)).length;
+      const pdfChildMatches = childKeywords.filter(keyword => lowerText.includes(keyword));
+      const pdfFinanceMatches = financeKeywords.filter(keyword => lowerText.includes(keyword));
       
-      if (childScore > financeScore && childScore > 0) {
+      console.log('📄 PDF content analysis:', {
+        childMatches: pdfChildMatches.length,
+        financeMatches: pdfFinanceMatches.length,
+        childKeywords: pdfChildMatches.slice(0, 3), // Show first 3 matches
+        financeKeywords: pdfFinanceMatches.slice(0, 3)
+      });
+      
+      if (pdfChildMatches.length > pdfFinanceMatches.length && pdfChildMatches.length > 0) {
+        console.log('🎯 Child vault detected from PDF content:', pdfChildMatches.slice(0, 3));
         return 'child';
       }
       
-      if (financeScore > childScore && financeScore > 0) {
+      if (pdfFinanceMatches.length > pdfChildMatches.length && pdfFinanceMatches.length > 0) {
+        console.log('🎯 Finance vault detected from PDF content:', pdfFinanceMatches.slice(0, 3));
         return 'finance';
       }
     }
     
+    console.log('❓ Could not determine vault type');
     return null; // Cannot determine
   }
 
@@ -148,6 +169,12 @@ export class SectionMapper {
       if (formToDocType[formType]) {
         metadata.documentType = formToDocType[formType];
       }
+    }
+    
+    // Handle order detection from filename
+    if (data.documentType === 'order' && metadata.section === 'orders') {
+      // Map to orderType field for orders section - default to interim for both child and finance
+      metadata.orderType = 'interim_order'; // Default for all matters (most common)
     }
 
     // Map preliminary document types
@@ -195,8 +222,10 @@ export class SectionMapper {
     
     // Set date
     if (data.date) {
-      metadata.date = this.formatDateForInput(data.date);
-      metadata.reportDate = this.formatDateForInput(data.date);
+      const formattedDate = this.formatDateForInput(data.date);
+      console.log('Date extracted from filename:', data.date, '-> formatted:', formattedDate);
+      metadata.date = formattedDate;
+      metadata.reportDate = formattedDate;
     }
 
     // Extract person name from filename for statements and experts

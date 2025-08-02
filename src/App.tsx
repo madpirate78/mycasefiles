@@ -159,6 +159,19 @@ function App() {
     }
   };
 
+  const handleQuickOrganize = async (fileId: number, section: string, vaultType: VaultType) => {
+    try {
+      await updateFile(fileId, {
+        section: section,
+        vaultType: vaultType
+      });
+      console.log(`File quickly organized to section: ${section}`);
+      fetchFilesFromDB(); // Refresh the files list
+    } catch (error) {
+      console.error('Error organizing file:', error);
+    }
+  };
+
   const handleVaultChange = (vaultType: VaultType) => {
     console.log(`🔄 VAULT CHANGE BUTTON PRESSED: Switching from ${currentVault} to ${vaultType}`);
     setCurrentVault(vaultType);
@@ -221,7 +234,7 @@ function App() {
   const renderContent = () => {
     switch (currentView) {
       case 'home':
-        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileUpdate={handleFileUpdate} currentVault={currentVault} />;
+        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} />;
       case 'bundles':
         return <BundleList uploadedFiles={uploadedFiles} />;
       case 'documents':
@@ -231,12 +244,12 @@ function App() {
       case 'settings':
         return <VaultSettings vaultType={currentVault} />;
       default:
-        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileUpdate={handleFileUpdate} currentVault={currentVault} />;
+        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} />;
     }
   };
 
   return (
-    <div className="app">
+    <div className={`app vault-${currentVault}`}>
       {showBrowserWarning && (
         <div className="browser-warning">
           <div className="warning-content">

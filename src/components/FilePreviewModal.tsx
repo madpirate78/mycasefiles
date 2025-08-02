@@ -179,27 +179,27 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           if (pdfData.documentType && !finalMetadata.documentType && !finalMetadata.orderType) {
             // Map PDF document type to form document type
             if (pdfData.documentType === 'order' && finalMetadata.section === 'orders') {
-              if (vaultType === 'child') {
-                finalMetadata.orderType = 'interim_order';
-              } else {
-                finalMetadata.orderType = 'financial_order';
-              }
+              finalMetadata.orderType = 'interim_order'; // Default to interim order for all matters
             }
             // For applications, filename parsing is usually better
           }
+        }
+
+        // Auto-detect vault type based on filename and content, with current vault as fallback
+        const detectedVaultType = detectVaultType(file.name, pdfText);
+        if (detectedVaultType) {
+          console.log(`🔍 Auto-detected vault type: ${detectedVaultType}`);
+          finalMetadata.vaultType = detectedVaultType;
+        } else {
+          // If no clear vault type detected, use current vault mode as default
+          console.log(`🔄 No vault type detected, defaulting to current vault: ${vaultType}`);
+          finalMetadata.vaultType = vaultType;
         }
 
         // Store PDF text for future use (AI processing moved to separate page)
         if (pdfText && pdfText.length > 20) {
           setPdfText(pdfText);
           console.log('📝 PDF text stored (length:', pdfText.length, ')');
-
-          // Auto-detect vault type based on content
-          const detectedVaultType = detectVaultType(file.name, pdfText);
-          if (detectedVaultType) {
-            console.log(`🔍 Auto-detected vault type: ${detectedVaultType}`);
-            finalMetadata.vaultType = detectedVaultType;
-          }
         }
 
         console.log('Final merged metadata:', finalMetadata);
@@ -353,12 +353,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       fields: [
         { key: 'orderType', label: 'Order Type', type: 'select', required: true,
           options: [
-            { value: 'interim_order', label: 'Interim Order' },
             { value: 'final_order', label: 'Final Order' },
-            { value: 'directions_order', label: 'Directions Order' },
-            { value: 'consent_order', label: 'Consent Order' },
-            { value: 'prohibited_steps_order', label: 'Prohibited Steps Order' },
-            { value: 'specific_issue_order', label: 'Specific Issue Order' }
+            { value: 'interim_order', label: 'Interim Order (including directions)' },
+            { value: 'other_order', label: 'Other Order' }
           ]
         },
         { key: 'courtReference', label: 'Court Reference', type: 'text', placeholder: 'e.g., AB12C34567', required: true },
@@ -514,12 +511,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           fields: [
             { key: 'orderType', label: 'Order Type', type: 'select', required: true,
               options: [
-                { value: 'financial_order', label: 'Financial Order' },
-                { value: 'consent_order', label: 'Consent Order' },
-                { value: 'clean_break_order', label: 'Clean Break Order' },
-                { value: 'pension_sharing_order', label: 'Pension Sharing Order' },
-                { value: 'maintenance_order', label: 'Maintenance Order' },
-                { value: 'property_adjustment_order', label: 'Property Adjustment Order' }
+                { value: 'final_order', label: 'Final Order' },
+                { value: 'interim_order', label: 'Interim Order (including directions)' },
+                { value: 'other_order', label: 'Other Order' }
               ]
             },
             { key: 'courtReference', label: 'Court Reference', type: 'text', placeholder: 'e.g., FD23D00123', required: true },

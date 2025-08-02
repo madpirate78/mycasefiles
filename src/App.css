@@ -19,6 +19,17 @@
   --danger: #DC3545;
   --warning: #FFC107;
   
+  /* Vault-specific color schemes */
+  --child-primary: #4A90E2;
+  --child-secondary: #357ABD;
+  --child-light: #E3F2FD;
+  --child-accent: #1976D2;
+  
+  --finance-primary: #4CAF50;
+  --finance-secondary: #388E3C;
+  --finance-light: #E8F5E8;
+  --finance-accent: #2E7D32;
+  
   /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
@@ -119,6 +130,52 @@ body {
   display: flex;
   flex-direction: column;
   height: 100vh;
+}
+
+/* === VAULT-SPECIFIC THEMES === */
+
+/* Child vault theme (blue) */
+.app.vault-child {
+  --primary-color: var(--child-primary);
+  --secondary-color: var(--child-secondary);
+  --accent-color: var(--child-accent);
+  --light-bg: var(--child-light);
+}
+
+.app.vault-child .app-header {
+  background: linear-gradient(135deg, var(--child-primary), var(--child-secondary));
+}
+
+.app.vault-child .nav-btn.active {
+  background: var(--child-accent);
+  border-left: 4px solid var(--child-accent);
+}
+
+.app.vault-child .nav-btn:hover {
+  background: var(--child-light);
+  color: var(--child-primary);
+}
+
+/* Finance vault theme (green) */
+.app.vault-finance {
+  --primary-color: var(--finance-primary);
+  --secondary-color: var(--finance-secondary);
+  --accent-color: var(--finance-accent);
+  --light-bg: var(--finance-light);
+}
+
+.app.vault-finance .app-header {
+  background: linear-gradient(135deg, var(--finance-primary), var(--finance-secondary));
+}
+
+.app.vault-finance .nav-btn.active {
+  background: var(--finance-accent);
+  border-left: 4px solid var(--finance-accent);
+}
+
+.app.vault-finance .nav-btn:hover {
+  background: var(--finance-light);
+  color: var(--finance-primary);
 }
 
 /* PDF Navigation Styles */
@@ -259,39 +316,51 @@ body {
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-xl);
-  background-color: var(--white);
+  background: linear-gradient(135deg, var(--child-primary), var(--child-secondary));
   border-bottom: 1px solid var(--medium-gray);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .logo {
   font-size: 24px;
   font-weight: 600;
-  color: var(--primary-blue);
+  color: var(--white);
   margin-right: auto;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .search-bar {
   width: 300px;
   padding: var(--spacing-sm) var(--spacing-md);
-  border: 1px solid var(--medium-gray);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-md);
   font-size: 14px;
   margin-right: var(--spacing-md);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+}
+
+.search-bar:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.8);
+  background: var(--white);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
 }
 
 .settings-btn {
-  background: none;
-  border: none;
-  font-size: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: var(--white);
+  font-size: 18px;
   cursor: pointer;
   padding: var(--spacing-sm);
   border-radius: var(--radius-sm);
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 
 .settings-btn:hover {
-  background-color: var(--light-gray);
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .app-body {
@@ -1272,42 +1341,138 @@ body {
   margin-bottom: var(--spacing-md);
 }
 
-.file-carousel {
+/* File list for uncategorized files */
+.file-list {
   display: flex;
+  flex-direction: column;
   gap: var(--spacing-md);
-  overflow-x: auto;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-md) 0;
 }
 
-.file-card.clickable {
+.file-item {
+  background: white;
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid transparent;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  transition: all 0.2s ease;
+}
+
+.file-item:hover {
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.file-item .file-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex: 1;
+}
+
+.file-item .file-icon {
+  font-size: 2rem;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.file-item .file-details {
+  flex: 1;
+  min-width: 0; /* Allow text truncation */
+}
+
+.file-item .file-details h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-xs) 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.file-suggestion {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 0;
+  font-weight: 500;
+}
+
+.file-organize {
+  flex-shrink: 0;
+  min-width: 280px;
+}
+
+.organize-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.section-dropdown {
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--radius-md);
+  background: white;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-primary);
   cursor: pointer;
-  min-width: 200px;
-  position: relative;
+  transition: all 0.2s ease;
 }
 
-.file-card.clickable:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+.section-dropdown:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
 }
 
-.file-status {
-  font-size: 12px;
-  color: var(--warning);
-  margin-top: var(--spacing-xs);
+.section-dropdown:hover {
+  border-color: var(--secondary-blue);
 }
 
-.organize-hint {
-  position: absolute;
-  bottom: var(--spacing-md);
-  right: var(--spacing-md);
-  font-size: 12px;
+.preview-btn {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--primary-blue);
+  border-radius: var(--radius-md);
+  background: white;
   color: var(--primary-blue);
-  opacity: 0;
-  transition: opacity 0.2s;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
-.file-card.clickable:hover .organize-hint {
-  opacity: 1;
+.preview-btn:hover {
+  background: var(--primary-blue);
+  color: white;
+}
+
+.preview-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .file-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  
+  .file-item .file-info {
+    width: 100%;
+  }
+  
+  .file-organize {
+    width: 100%;
+    min-width: unset;
+  }
 }
 
 .organized-summary {

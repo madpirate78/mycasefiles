@@ -7,11 +7,17 @@ A comprehensive legal case management desktop application designed for self-repr
 ## 🎯 Current Features
 
 ### Document Management
-- **Dynamic Organize Dialog**: Section-specific metadata fields that adapt based on document type
-- **Smart File Organization**: UK family court structure (Child Matters, Financial Matters, Preliminary Documents, etc.)
-- **Automatic Filename Generation**: Context-aware naming based on document metadata
-- **IndexedDB Storage**: Local file storage with efficient retrieval
-- **Intelligent Parsing**: Filename-first + PDF content extraction strategy
+- **Two-Step Organization System**: 🔥 **NEW** - Smart file organization prioritizing bundle preparation over complex metadata
+- **Auto-Assignment for High-Confidence Files**: Orders, applications, and expert reports automatically organize themselves
+- **Smart Section Dropdowns**: Intelligent suggestions with confidence levels (high/medium/low) for quick manual organization
+- **"Take a Closer Look" Feature**: 🔥 **NEW** - PDF preview modal for visual document inspection when filename alone isn't clear
+- **Simplified Organization Modal**: Clean interface focusing on section assignment with vault type confirmation and mismatch warnings
+- **Two-Vault System**: Separate Child and Financial matter workspaces with independent file organization
+- **Vault Switching**: Easy toggling between Child Matters and Financial Matters with dedicated interfaces
+- **Streamlined Bundle Workflow**: Focus on getting files into correct sections quickly for court bundle creation
+- **Duplicate Detection**: Intelligent file duplicate prevention with user feedback notifications
+- **IndexedDB Storage**: Local file storage with vault-based filtering and efficient retrieval
+- **Intelligent Parsing**: Filename-first + PDF content extraction strategy with vault type detection
 
 ### PDF Processing & Analysis
 - **Desktop PDF Text Extraction**: Full pdf-parse library integration via Electron main process
@@ -33,6 +39,9 @@ A comprehensive legal case management desktop application designed for self-repr
 - **Native Desktop App**: Electron wrapper providing full Node.js capabilities
 - **Secure IPC**: Preload script ensures safe communication between renderer and main process
 - **Cross-Platform**: Windows, macOS, and Linux support via electron-builder
+- **Vault-Based Interface**: Clean separation between Child and Financial matter workspaces
+- **Compact Form Layout**: Horizontal field arrangement for efficient space usage
+- **Real-time Upload Feedback**: Success, warning, and error notifications for file operations
 - **Calm Aesthetic**: Clean, uncluttered design following UI specification principles
 - **Progressive Disclosure**: Complexity revealed only when needed
 - **Visual Feedback**: Clear status indicators and interactive elements
@@ -115,24 +124,30 @@ Opens [http://localhost:3000](http://localhost:3000) for UI development only. **
 ```
 src/
 ├── components/
-│   ├── Dashboard.tsx           # Main dashboard interface
-│   ├── DocumentVault.tsx       # Document library view
-│   ├── FilePreviewModal.tsx    # Dynamic organize dialog with auto-population
+│   ├── Dashboard.tsx           # Main dashboard with smart file organization dropdowns and auto-assignment
+│   ├── DocumentVault.tsx       # Document library view with vault filtering
+│   ├── FilePreviewModal.tsx    # Full metadata edit dialog (legacy/detailed workflow)
+│   ├── SimpleOrganizeModal.tsx # 🔥 NEW - Simplified "Take a Closer Look" modal for section assignment
+│   ├── VaultSelector.tsx       # Child/Financial matter vault switching interface
+│   ├── VaultSettings.tsx       # Vault-specific party and court information management
 │   ├── PDFRenderer.tsx         # High-quality PDF viewer with carousel navigation
 │   ├── EmailManager.tsx        # Email import functionality
 │   └── BundleList.tsx          # Document bundle management
 ├── services/
-│   ├── indexedDBService.ts     # Local storage management
+│   ├── indexedDBService.ts     # Local storage management with vault-based filtering
+│   ├── vaultService.ts         # Vault settings and file migration management
 │   ├── emailParser.ts          # Email parsing utilities
 │   └── documentParser/         # PDF text extraction and parsing
-│       ├── index.ts            # Main parser exports
+│       ├── index.ts            # Main parser exports with vault type detection
 │       ├── filenameParser.ts   # Extract info from filenames
 │       ├── pdfContentParser.ts # PDF text analysis and extraction
-│       ├── sectionMapper.ts    # Map documents to correct sections
+│       ├── sectionMapper.ts    # Map documents to correct sections with vault awareness
 │       └── types.ts            # TypeScript interfaces
+├── types/
+│   └── vault.ts                # Vault system TypeScript interfaces
 ├── pdfConfig.ts                # PDF.js configuration for offline use
 ├── pdfWorker.ts                # PDF.js worker setup
-└── App.css                     # Application styling
+└── App.css                     # Application styling with vault selector and compact forms
 
 public/
 ├── electron.js                 # Electron main process with PDF parsing
@@ -158,16 +173,25 @@ docs/
 - **Security**: Context isolation and disabled node integration for security
 - **Native Menus**: Custom menu bar with legal document management shortcuts
 
+### Smart File Organization System
+- **Confidence-Based Assignment**: Three-tier system (high/medium/low) for intelligent file organization
+- **Auto-Assignment Logic**: High-confidence patterns (orders, applications, expert reports) trigger immediate section assignment
+- **Smart Dropdown Interface**: Section selectors with intelligent suggestions for medium/low confidence files
+- **Visual Document Inspection**: "Take a Closer Look" button opens PDF preview modal when filename alone isn't sufficient
+- **Bundle-First Approach**: Prioritizes getting files into sections over detailed metadata collection
+- **Two-Step Workflow**: Quick organization → detailed metadata (when needed)
+- **Vault Type Confirmation**: Prevents mixing child and finance documents with clear warnings and visual feedback
+
 ### PDF Processing & Intelligence
 - **pdf-parse**: Server-side PDF text extraction in Electron main process
 - **react-pdf**: PDF viewing and rendering in React frontend
 - **PDF.js**: High-quality rendering engine with local assets
 - **Offline-first**: All PDF.js dependencies served locally
-- **Intelligent Parsing**: Two-stage extraction (filename → PDF content → form population)
+- **Intelligent Parsing**: Two-stage extraction (filename → PDF content → section assignment)
 
 ### Document Intelligence
 - **Pattern Recognition**: UK court case numbers, form types, judge names, person names
-- **Auto-Population**: Smart field mapping based on document section and extracted data
+- **Confidence Scoring**: Smart classification system for reliable auto-assignment
 - **UK Legal System**: Specialized patterns for family court documents and statements
 - **Judge Abbreviations**: Automatic conversion (Her Honour Judge → HHJ, etc.)
 - **Statement Processing**: Multi-pattern name extraction from headers, "I, [Name]" clauses, and signatures
@@ -183,18 +207,16 @@ docs/
 ### Data Management
 - **IndexedDB**: Browser-native storage for documents and metadata
 - **TypeScript**: Type-safe development with interfaces for all data structures
-- **Dynamic metadata**: Section-specific form fields based on document type
+- **Section-First Architecture**: Optimized for court bundle preparation workflow
 - **Filename-first Strategy**: Prioritize structured filename data over PDF parsing
 
-### Parsing Strategy & Workflow
-- **Three-Stage Extraction**: Filename parsing → PDF content analysis → Field population
-- **Current Approach**: Document-by-document parsing with pattern matching
-- **Planned Enhancement**: Case pre-input workflow for maximum accuracy:
-  1. **Case Setup Phase**: User inputs basic case details (court, parties, case number, children)
-  2. **Enhanced Parsing**: Use known case data to validate and improve extraction
-  3. **Smart Matching**: Cross-reference extracted data with pre-input information
-  4. **Accuracy Boost**: Known party names and court details dramatically improve parsing success
-- **Fallback Strategy**: Robust pattern matching ensures functionality even without pre-input data
+### Organization Strategy & Workflow
+- **Three-Tier Confidence System**: High (auto-assign) → Medium (suggest) → Low (manual)
+- **Bundle Preparation Focus**: Section assignment prioritized over metadata complexity
+- **Smart Pattern Matching**: UK court case numbers, form types, judge names, and person names
+- **Visual Inspection Fallback**: "Take a Closer Look" PDF preview when automatic detection is insufficient
+- **Vault Type Safety**: Prevents document mixing with clear warnings and confirmation dialogs
+- **Flexible Override System**: Users can always change auto-assignments and add detailed metadata later
 
 ### Styling & UI
 - **CSS Custom Properties**: Consistent design system with calm color palette
@@ -220,12 +242,23 @@ docs/
 ## 📋 Development Status
 
 ### ✅ Completed Features
+- **Two-Step File Organization**: Smart auto-assignment + manual dropdown system prioritizing bundle preparation ⚠️ **NEEDS TESTING**
+- **Intelligent Auto-Assignment**: High-confidence files (orders, applications, expert reports) organize automatically ⚠️ **NEEDS TESTING**  
+- **Smart Suggestion System**: Medium/low confidence files show intelligent suggestions with dropdown selection ⚠️ **NEEDS TESTING**
+- **"Take a Closer Look" Feature**: PDF preview modal for visual document inspection when filenames are unclear ⚠️ **NEEDS TESTING**
+- **Simplified Organization Modal**: Clean interface focusing on section assignment with vault type warnings ⚠️ **NEEDS TESTING**
+- **Two-Vault System**: Complete separation of Child and Financial matter workspaces ✅ **TESTED & WORKING**
+- **Vault Switching Interface**: Clean vault selector with party-specific metadata ✅ **TESTED & WORKING**
+- **Duplicate File Detection**: Smart prevention with user-friendly notifications ✅ **TESTED & WORKING**
+- **Immediate File Loading**: Uncategorized files appear instantly on app startup ✅ **TESTED & WORKING**
+- **Compact Form Layout**: Horizontal field arrangement for efficient space usage ✅ **TESTED & WORKING**
+- **Vault-Specific Metadata**: Child matters track father/mother, finance tracks applicant/respondent ✅ **TESTED & WORKING**
 - **Electron Desktop App**: Native desktop application with full Node.js capabilities ✅ **TESTED & WORKING**
 - **PDF Text Extraction**: Automated extraction of court references, judge names, and document types ✅ **TESTED & WORKING**
 - **Manual OCR Control**: User-triggered OCR for scanned PDFs with visual feedback and confidence scoring ✅ **TESTED & WORKING**
 - **Dual-Strategy Parsing**: Filename-first approach with PDF content fallback for optimal accuracy ✅ **TESTED & WORKING**
 - **UK Court Integration**: Pattern recognition for case numbers (AB12C34567), form types (C100, FL401), judge abbreviations (HHJ, DJ, DDJ) ✅ **TESTED & WORKING**
-- **Smart Auto-Population**: Intelligent form field pre-filling works for both text-based and scanned PDFs ✅ **TESTED & WORKING**
+- **Smart Auto-Population**: Intelligent form field pre-filling with vault type detection ✅ **TESTED & WORKING**
 - **Enhanced Statement Processing**: Comprehensive person name extraction from headers, patterns, and signatures ✅ **TESTED & WORKING**
 - **UK Legal Name Formatting**: Proper title and name cleaning (Mr/Mrs/Ms + Initial/First + Surname) ✅ **TESTED & WORKING**
 - **UK Date Formatting**: DD/MM/YYYY date inputs and "March 5, 2025" display format throughout ✅ **TESTED & WORKING**
@@ -239,23 +272,18 @@ docs/
 - **Cross-Platform Support**: Windows, macOS, and Linux desktop packaging
 
 ### 🚧 In Development
-- **Case Pre-Input Workflow**: Initial case setup page for enhanced parsing accuracy with pre-filled party names and court details
-- **Enhanced PDF Parsing**: Party name extraction and children information parsing
-- **Court Name Recognition**: Automatic detection of family court locations
-- **Application Type Classification**: Advanced form type detection beyond basic patterns
-- **Bundle Generation**: Automatic page numbering and document compilation
-- **Email Integration**: Import functionality for court correspondence
+- **Visual Vault Mode Feedback**: Color schemes (blue for child, green for finance) to clearly indicate current vault mode
+- **Advanced Bundle Generation**: Automatic page numbering and document compilation with vault separation
+- **Enhanced File Organization Interface**: Refinements to auto-assignment accuracy and dropdown usability
+- **Court Bundle Templates**: Pre-configured section orders and formatting for different court types
+- **Email Integration**: Import functionality for court correspondence with vault assignment
+- **Detailed Metadata Enhancement**: Secondary workflow for adding comprehensive document details after section assignment
 
 ### 📅 Planned Features
-- **Case Management Dashboard**: Central hub for managing multiple family court cases with party details and case timelines
-- **Enhanced Case Pre-Input**: Comprehensive case setup with court details, party names, children information, and case history for maximum parsing accuracy
-- **Smart Document Matching**: Use pre-input case data to validate and enhance automatic field population
-- **Advanced Document Processing**: Enhanced metadata extraction and organization features
 - **Advanced Document Intelligence**: Full court order parsing with dates and conditions
 - **Professional Export**: PDF bundle generation with table of contents
 - **Search & Filter**: Advanced search across document text content
 - **Redaction Tools**: Privacy protection for sensitive information
-- **Multi-Case Management**: Support for multiple concurrent family court cases
 - **Backup & Sync**: Cloud storage integration for document safety
 
 ## 🔄 Git Workflow

@@ -17,6 +17,7 @@ const VaultSelector: React.FC<VaultSelectorProps> = ({ currentVault, onVaultChan
     <div className="vault-selector">
       <button
         className={`vault-btn ${currentVault === 'child' ? 'active' : ''}`}
+        data-vault="child"
         onClick={() => handleVaultClick('child')}
       >
         <span className="vault-icon">👨‍👩‍👧‍👦</span>
@@ -24,6 +25,7 @@ const VaultSelector: React.FC<VaultSelectorProps> = ({ currentVault, onVaultChan
       </button>
       <button
         className={`vault-btn ${currentVault === 'finance' ? 'active' : ''}`}
+        data-vault="finance"
         onClick={() => handleVaultClick('finance')}
       >
         <span className="vault-icon">💰</span>

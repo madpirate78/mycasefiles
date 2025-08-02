@@ -254,9 +254,14 @@ export class PDFContentParser {
   }
 
   /**
-   * Extract judge name with UK court abbreviations
+   * Extract judge name with UK court abbreviations - scan first page, last page, then entire document
    */
   private extractJudgeName(text: string): string | null {
+    // Scan first page (first 1500 chars) where judge names typically appear
+    const firstPageText = text.substring(0, 1500);
+    // Also scan last page (last 800 chars) for signature blocks
+    const lastPageText = text.substring(Math.max(0, text.length - 800));
+    
     const judgePatterns = [
       // Standard patterns
       /Ordered\s+by\s+(.+?)\s+on\s+\d+/i,
@@ -267,20 +272,51 @@ export class PDFContentParser {
       /(?:Her\s+Honour\s+Judge|HHJ)\s+([A-Z][a-z]+)/i,
       /(?:His\s+Honour\s+Judge|HHJ)\s+([A-Z][a-z]+)/i,
       /(?:District\s+Judge|DJ)\s+([A-Z][a-z]+)/i,
+      /District\s+Judge\s+\(Magistrates['']\s+Court\)\s+([A-Z][a-z]+)/i,
       /(?:Deputy\s+District\s+Judge|DDJ)\s+([A-Z][a-z]+)/i,
       /Recorder\s+([A-Z][a-z]+)/i,
       /Circuit\s+Judge\s+([A-Z][a-z]+)/i,
       
       // Simpler patterns
-      /Judge\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i
+      /Judge\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)/i,
+      
+      // End-of-document signature patterns
+      /Signed:\s*(.+?Judge.+)/i,
+      /Signature:\s*(.+?Judge.+)/i,
+      /((?:HHJ|DJ|DDJ|Recorder|Circuit\s+Judge)\s+[A-Z][a-z]+)/i
     ];
 
+    // First try the first page (most common location)
+    for (const pattern of judgePatterns) {
+      const match = firstPageText.match(pattern);
+      if (match && match[1]) {
+        const judgeName = this.cleanJudgeName(match[1].trim());
+        console.log('👨‍⚖️ Judge found in first page:', judgeName);
+        return judgeName;
+      }
+    }
+    
+    // Then try the last page (signature blocks)
+    for (const pattern of judgePatterns) {
+      const match = lastPageText.match(pattern);
+      if (match && match[1]) {
+        const judgeName = this.cleanJudgeName(match[1].trim());
+        console.log('👨‍⚖️ Judge found in last page:', judgeName);
+        return judgeName;
+      }
+    }
+    
+    // Finally, scan the entire document (fallback for judges mentioned anywhere)
+    console.log('🔍 Scanning entire document for judge name...');
     for (const pattern of judgePatterns) {
       const match = text.match(pattern);
       if (match && match[1]) {
-        return this.cleanJudgeName(match[1].trim());
+        const judgeName = this.cleanJudgeName(match[1].trim());
+        console.log('👨‍⚖️ Judge found in full document:', judgeName);
+        return judgeName;
       }
     }
+    
     return null;
   }
 
@@ -288,22 +324,36 @@ export class PDFContentParser {
    * Clean judge name and add UK abbreviations
    */
   private cleanJudgeName(name: string): string {
+    console.log('🧹 Cleaning judge name:', name);
+    
     // Remove full titles and replace with abbreviations
     let cleaned = name
       .replace(/^Her\s+Honour\s+Judge\s+/i, 'HHJ ')
       .replace(/^His\s+Honour\s+Judge\s+/i, 'HHJ ')
+      .replace(/^District\s+Judge\s+\(Magistrates['']\s+Court\)\s+/i, 'DJ (MC) ')
       .replace(/^District\s+Judge(?:\s+\(Magistrates['']\s+Court\))?\s+/i, 'DJ ')
       .replace(/^Deputy\s+District\s+Judge\s+/i, 'DDJ ')
       .replace(/^Recorder\s+/i, 'Recorder ')
       .replace(/^Circuit\s+Judge\s+/i, 'CJ ')
       .trim();
 
+    console.log('🧹 After title replacement:', cleaned);
+
     // If no title found, check if it starts with a title and add appropriate abbreviation
     if (!cleaned.match(/^(HHJ|DJ|DDJ|Recorder|CJ)/)) {
+      console.log('🧹 No title found, defaulting to DJ');
       // Default to DJ if no title specified
       cleaned = 'DJ ' + cleaned;
     }
+    
+    // Handle the magistrate's court pattern specifically
+    if (cleaned.match(/^DJ\s+\(MC\)/)) {
+      // Already formatted correctly
+      console.log('🧹 Magistrate court pattern detected');
+      return cleaned;
+    }
 
+    console.log('🧹 Final cleaned judge name:', cleaned);
     return cleaned;
   }
 
