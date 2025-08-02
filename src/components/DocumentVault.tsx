@@ -3,13 +3,13 @@ import { StoredFile } from '../services/indexedDBService';
 import { formatStoredDate } from '../utils/dateUtils';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
-import FilePreviewModal, { FileMetadata } from './FilePreviewModal';
+import FilePreviewModal, { FileWithOCR } from './FilePreviewModal';
 
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
   onFileUpload: (files: FileList) => void;
   onFileDelete?: (fileId: number) => void;
-  onFileEdit?: (fileId: number, metadata: FileMetadata) => void;
+  onFileEdit?: (fileId: number, metadata: FileWithOCR) => void;
   currentVault: VaultType;
 }
 
@@ -48,7 +48,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
     setIsEditModalOpen(true);
   };
 
-  const handleEditSave = (fileId: number, metadata: FileMetadata) => {
+  const handleEditSave = (fileId: number, metadata: FileWithOCR) => {
     if (onFileEdit) {
       onFileEdit(fileId, metadata);
     }

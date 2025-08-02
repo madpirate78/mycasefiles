@@ -8,7 +8,7 @@ import EmailManager from './components/EmailManager';
 import VaultSelector from './components/VaultSelector';
 import VaultSettings from './components/VaultSettings';
 import FolderImportWizard from './components/FolderImportWizard';
-import { FileMetadata } from './components/FilePreviewModal';
+import { FileWithOCR } from './components/FilePreviewModal';
 import { VaultType } from './types/vault';
 
 type View = 'home' | 'bundles' | 'documents' | 'emails' | 'import' | 'settings';
@@ -117,18 +117,47 @@ function App() {
     }
   }, [currentVault]);
 
-  const handleFileUpdate = async (fileId: number, metadata: FileMetadata) => {
+  const handleFileUpdate = async (fileId: number, metadata: FileWithOCR) => {
     try {
       await updateFile(fileId, {
         name: metadata.name,
+        displayName: metadata.displayName,
         section: metadata.section,
-        orderReference: metadata.orderReference,
-        judgeName: metadata.judgeName,
-        date: metadata.date,
+        orderReference: metadata.orderReference as string | undefined,
+        judgeName: metadata.judgeName as string | undefined,
+        date: metadata.date as string | undefined,
         description: metadata.description,
-        vaultType: currentVault,
+        vaultType: currentVault, // Use current vault from app state, not from metadata
         courtReference: metadata.courtReference,
-        applicationDate: metadata.applicationDate
+        applicationDate: metadata.applicationDate,
+        // All metadata fields that get auto-populated
+        reference: metadata.reference as string | undefined,
+        personName: metadata.personName as string | undefined,
+        expertName: metadata.expertName as string | undefined,
+        reportDate: metadata.reportDate as string | undefined,
+        orderType: metadata.orderType as string | undefined,
+        documentType: metadata.documentType as string | undefined,
+        expertType: metadata.expertType as string | undefined,
+        childName: metadata.childName as string | undefined,
+        planType: metadata.planType as string | undefined,
+        reviewDate: metadata.reviewDate as string | undefined,
+        socialWorker: metadata.socialWorker as string | undefined,
+        disclosureType: metadata.disclosureType as string | undefined,
+        period: metadata.period as string | undefined,
+        valuationType: metadata.valuationType as string | undefined,
+        propertyAddress: metadata.propertyAddress as string | undefined,
+        valuer: metadata.valuer as string | undefined,
+        valuationDate: metadata.valuationDate as string | undefined,
+        value: metadata.value as string | undefined,
+        sender: metadata.sender as string | undefined,
+        recipient: metadata.recipient as string | undefined,
+        subject: metadata.subject as string | undefined,
+        // Auto-population and OCR tracking
+        autopopulationPerformed: metadata.autopopulationPerformed,
+        ocrPerformed: metadata.ocrPerformed,
+        ocrText: metadata.ocrText as string | undefined,
+        ocrConfidence: metadata.ocrConfidence,
+        ocrDate: metadata.ocrDate as string | undefined
       });
       fetchFilesFromDB(); // Refresh the files list
     } catch (error) {

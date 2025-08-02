@@ -8,7 +8,8 @@ let db: IDBDatabase;
 
 export interface StoredFile {
   id?: number;
-  name: string;
+  name: string; // Original filename - never changes
+  displayName?: string; // Generated display name from metadata
   type: string;
   data: File;
   section?: string;
@@ -21,6 +22,38 @@ export interface StoredFile {
   vaultType?: 'child' | 'finance'; // Which vault this file belongs to
   applicationDate?: string; // Date of the application this file relates to
   courtReference?: string; // Court reference for this specific document
+  
+  // Additional metadata fields that get auto-populated
+  reference?: string;
+  personName?: string;
+  expertName?: string;
+  reportDate?: string;
+  orderType?: string;
+  documentType?: string;
+  expertType?: string;
+  childName?: string;
+  planType?: string;
+  reviewDate?: string;
+  socialWorker?: string;
+  disclosureType?: string;
+  period?: string;
+  valuationType?: string;
+  propertyAddress?: string;
+  valuer?: string;
+  valuationDate?: string;
+  value?: string;
+  sender?: string;
+  recipient?: string;
+  subject?: string;
+  
+  // Auto-population tracking
+  autopopulationPerformed?: boolean; // Whether auto-population has been run on this file
+  
+  // OCR-related fields
+  ocrPerformed?: boolean; // Whether OCR has been run on this file
+  ocrText?: string; // Extracted OCR text
+  ocrConfidence?: number; // OCR confidence score
+  ocrDate?: string; // When OCR was performed
 }
 
 export const openDB = (): Promise<IDBDatabase> => {
