@@ -107,6 +107,28 @@ export const getFiles = (vaultType?: 'child' | 'finance'): Promise<StoredFile[]>
   });
 };
 
+export const deleteFile = (fileId: number): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject("Database not open.");
+      return;
+    }
+
+    const transaction = db.transaction([STORE_NAME], "readwrite");
+    const objectStore = transaction.objectStore(STORE_NAME);
+    const request = objectStore.delete(fileId);
+
+    request.onsuccess = () => {
+      resolve("File deleted successfully.");
+    };
+
+    request.onerror = (event: Event) => {
+      console.error("Error deleting file:", (event.target as IDBRequest).error?.message);
+      reject("Error deleting file.");
+    };
+  });
+};
+
 export const updateFile = (fileId: number, updates: Partial<StoredFile>): Promise<string> => {
   return new Promise((resolve, reject) => {
     if (!db) {

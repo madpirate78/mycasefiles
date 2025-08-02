@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import { formatStoredDate } from '../utils/dateUtils';
 import { VaultType } from '../types/vault';
@@ -7,15 +7,90 @@ import vaultService from '../services/vaultService';
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
   onFileUpload: (files: FileList) => void;
+  onFileDelete?: (fileId: number) => void;
   currentVault: VaultType;
 }
 
-const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, currentVault }) => {
+interface ExtendedFile extends StoredFile {
+  section?: string;
+  description?: string;
+  judgeName?: string;
+  orderReference?: string;
+  date?: string;
+}
+
+const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, onFileDelete, currentVault }) => {
   const [filter, setFilter] = useState('all');
   const [sortBy, setSortBy] = useState('date');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
 
   // Get vault-specific sections
   const sections = vaultService.getVaultSections(currentVault);
+
+  const handleDeleteClick = (fileId: number, fileName: string) => {
+    if (window.confirm(`Are you sure you want to delete "${fileName}"?\n\nThis action cannot be undone.`)) {
+      setDeletingFileId(fileId);
+      if (onFileDelete) {
+        onFileDelete(fileId);
+      }
+      // Reset deleting state after a short delay
+      setTimeout(() => setDeletingFileId(null), 500);
+    }
+  };
+
+  // Filter and sort files
+  const processedFiles = useMemo(() => {
+    let files = uploadedFiles as ExtendedFile[];
+
+    // Filter by section
+    if (filter !== 'all') {
+      files = files.filter(file => file.section === filter);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      files = files.filter(file => 
+        file.name.toLowerCase().includes(query) ||
+        file.description?.toLowerCase().includes(query) ||
+        file.judgeName?.toLowerCase().includes(query) ||
+        file.orderReference?.toLowerCase().includes(query)
+      );
+    }
+
+    // Sort files
+    files = [...files].sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'type':
+          return a.type.localeCompare(b.type);
+        case 'section':
+          return (a.section || 'other').localeCompare(b.section || 'other');
+        case 'date':
+        default:
+          // Sort by added date (newest first)
+          const dateA = a.addedDate ? new Date(a.addedDate).getTime() : 0;
+          const dateB = b.addedDate ? new Date(b.addedDate).getTime() : 0;
+          return dateB - dateA;
+      }
+    });
+
+    return files;
+  }, [uploadedFiles, filter, sortBy, searchQuery]);
+
+  // Count files by section
+  const sectionCounts = useMemo(() => {
+    const counts: { [key: string]: number } = { all: uploadedFiles.length };
+    
+    uploadedFiles.forEach((file: ExtendedFile) => {
+      const section = file.section || 'other';
+      counts[section] = (counts[section] || 0) + 1;
+    });
+
+    return counts;
+  }, [uploadedFiles]);
   
   const categories = [
     { id: 'all', label: 'All Documents', icon: '📚' },
@@ -30,6 +105,8 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
         'disclosure': '💰',
         'valuations': '🏠',
         'correspondence': '✉️',
+        'chronology': '📅',
+        'evidence': '🔍',
         'other': '📄'
       };
       return {
@@ -45,6 +122,13 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
       <div className="vault-header">
         <h1>Document Vault</h1>
         <div className="vault-controls">
+          <input
+            type="search"
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="vault-search"
+          />
           <select 
             value={sortBy} 
             onChange={(e) => setSortBy(e.target.value)}
@@ -53,6 +137,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             <option value="date">Sort by Date</option>
             <option value="name">Sort by Name</option>
             <option value="type">Sort by Type</option>
+            <option value="section">Sort by Section</option>
           </select>
         </div>
       </div>
@@ -69,44 +154,84 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             >
               <span className="filter-icon">{cat.icon}</span>
               <span className="filter-label">{cat.label}</span>
-              <span className="filter-count">{uploadedFiles.length}</span>
+              <span className="filter-count">{sectionCounts[cat.id] || 0}</span>
             </button>
           ))}
         </aside>
 
         <div className="document-list">
-          {uploadedFiles.length === 0 ? (
+          {processedFiles.length === 0 ? (
             <div className="empty-vault">
-              <h3>Your vault is empty</h3>
-              <p>Upload documents to start organizing your case files</p>
-              <label className="upload-prompt">
-                <input
-                  type="file"
-                  multiple
-                  onChange={(e) => e.target.files && onFileUpload(e.target.files)}
-                  style={{ display: 'none' }}
-                />
-                <span className="btn primary">Upload Documents</span>
-              </label>
+              {uploadedFiles.length === 0 ? (
+                <>
+                  <h3>Your vault is empty</h3>
+                  <p>Upload documents to start organizing your case files</p>
+                  <label className="upload-prompt">
+                    <input
+                      type="file"
+                      multiple
+                      onChange={(e) => e.target.files && onFileUpload(e.target.files)}
+                      style={{ display: 'none' }}
+                    />
+                    <span className="btn primary">Upload Documents</span>
+                  </label>
+                </>
+              ) : (
+                <>
+                  <h3>No documents found</h3>
+                  <p>No documents match your current filter or search criteria</p>
+                </>
+              )}
             </div>
           ) : (
-            uploadedFiles.map((file) => (
-              <div key={file.id} className="document-item">
-                <div className="doc-thumbnail">
-                  {file.type.includes('pdf') ? '📑' : file.type.includes('image') ? '🖼️' : '📄'}
-                </div>
-                <div className="doc-details">
-                  <h4>{file.name}</h4>
-                  <p className="doc-description">{(file as any).description || 'No description available'}</p>
-                  <p className="doc-meta">Added on {formatStoredDate(file.addedDate) || 'Unknown date'}</p>
-                </div>
-                <div className="doc-actions">
-                  <button className="action-btn small">Add to Bundle</button>
-                  <button className="action-btn small">View</button>
-                  <button className="action-btn small danger">Delete</button>
-                </div>
-              </div>
-            ))
+            <div className="documents-list">
+              {processedFiles.map((file) => {
+                const section = sections.find(s => s.id === file.section);
+                const sectionLabel = section?.label || 'Uncategorized';
+                const categoryIcon = categories.find(c => c.id === file.section)?.icon || '📄';
+                
+                return (
+                  <div key={file.id} className="document-row">
+                    <div className="doc-icon">
+                      {file.type.includes('pdf') ? '📑' : file.type.includes('image') ? '🖼️' : '📄'}
+                    </div>
+                    <div className="doc-content">
+                      <div className="doc-title-line">
+                        <a href="#" className="doc-title">{file.name}</a>
+                        <div className="doc-section-indicator">
+                          <span className="section-icon">{categoryIcon}</span>
+                          <span className="section-label">{sectionLabel}</span>
+                        </div>
+                      </div>
+                      <div className="doc-subtitle">
+                        {file.description && (
+                          <span className="doc-description">{file.description}</span>
+                        )}
+                        {(file.judgeName || file.orderReference || file.date) && (
+                          <span className="doc-metadata-inline">
+                            {file.judgeName && <span>Judge: {file.judgeName}</span>}
+                            {file.orderReference && <span> • Ref: {file.orderReference}</span>}
+                            {file.date && <span> • {formatStoredDate(file.date)}</span>}
+                          </span>
+                        )}
+                        <span className="doc-added-date">Added {formatStoredDate(file.addedDate)}</span>
+                      </div>
+                    </div>
+                    <div className="doc-actions-inline">
+                      <button className="link-btn">View</button>
+                      <button className="link-btn">Edit</button>
+                      <button 
+                        className={`link-btn danger ${deletingFileId === file.id ? 'deleting' : ''}`}
+                        onClick={() => file.id && handleDeleteClick(file.id, file.name)}
+                        disabled={deletingFileId === file.id}
+                      >
+                        {deletingFileId === file.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

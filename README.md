@@ -8,6 +8,7 @@ A comprehensive legal case management desktop application designed for self-repr
 
 ### Document Management
 - **Two-Step Organization System**: 🔥 **NEW** - Smart file organization prioritizing bundle preparation over complex metadata
+- **Folder Structure Import**: 🔥 **NEW** - Import pre-organized folders (Section A/B/C, Orders, Statements) with automatic section mapping
 - **Auto-Assignment for High-Confidence Files**: Orders, applications, and expert reports automatically organize themselves
 - **Smart Section Dropdowns**: Intelligent suggestions with confidence levels (high/medium/low) for quick manual organization
 - **"Take a Closer Look" Feature**: 🔥 **NEW** - PDF preview modal for visual document inspection when filename alone isn't clear
@@ -34,6 +35,16 @@ A comprehensive legal case management desktop application designed for self-repr
 - **Manual OCR Control**: User-triggered OCR for scanned PDFs with visual feedback and confidence scoring
 - **Tesseract.js Integration**: High-quality text extraction from scanned documents
 - **PDF Text Extraction**: Direct text extraction from digital PDFs using pdf-parse
+
+### Document Vault
+- **Enhanced Document View**: 🔥 **NEW** - Compact row-based layout with hyperlink-style titles and metadata
+- **Advanced Filtering**: Filter documents by bundle section with accurate file counts
+- **Smart Search**: Search across file names, descriptions, judge names, and references
+- **Flexible Sorting**: Sort by date (newest first), name, type, or section
+- **Section Indicators**: Visual badges showing which bundle section each document belongs to
+- **Inline Metadata**: See judge names, court references, and dates at a glance
+- **Quick Actions**: View, Edit, and Delete documents with confirmation dialogs
+- **Empty State Handling**: Different messages for empty vault vs. no search results
 
 ### Desktop Experience
 - **Native Desktop App**: Electron wrapper providing full Node.js capabilities
@@ -247,6 +258,8 @@ docs/
 - **Smart Suggestion System**: Medium/low confidence files show intelligent suggestions with dropdown selection ⚠️ **NEEDS TESTING**
 - **"Take a Closer Look" Feature**: PDF preview modal for visual document inspection when filenames are unclear ⚠️ **NEEDS TESTING**
 - **Simplified Organization Modal**: Clean interface focusing on section assignment with vault type warnings ⚠️ **NEEDS TESTING**
+- **Folder Structure Import**: Import pre-organized folders with automatic section mapping ⚠️ **NEEDS TESTING**
+- **Enhanced Document Vault**: Compact row layout with search, filtering, sorting, and delete functionality ⚠️ **NEEDS TESTING**
 - **Two-Vault System**: Complete separation of Child and Financial matter workspaces ✅ **TESTED & WORKING**
 - **Vault Switching Interface**: Clean vault selector with party-specific metadata ✅ **TESTED & WORKING**
 - **Duplicate File Detection**: Smart prevention with user-friendly notifications ✅ **TESTED & WORKING**
