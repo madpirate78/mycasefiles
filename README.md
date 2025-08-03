@@ -4,7 +4,7 @@
 
 ⚠️ **Desktop-only**: Requires Electron for PDF extraction, OCR, and file system access. Browser deployment not supported.
 
-**Latest Update**: Consolidated court documents - Applications, Orders, Judgments, and Transcripts now in single section with streamlined metadata fields.
+**Latest Update**: Bundle Builder - Create and manage court bundles with database storage, navigation reorganized, and comprehensive OCR batch processing.
 
 ## Features
 
@@ -29,6 +29,13 @@
 - **Page Selection**: Carousel interface for selecting specific pages
 - **Advanced Search**: Filter by section, search across metadata
 - **Quick Actions**: Edit, delete, and manage documents
+- **OCR ALL**: Batch OCR processing for all documents with progress tracking
+
+### Bundle Builder
+- **Bundle Creation**: Create court bundles with case details (name, reference, hearing date, court)
+- **Database Storage**: Persistent bundle storage with IndexedDB
+- **Status Tracking**: Draft/completed status with document counts
+- **Navigation**: Reorganized as Home → Documents → Bundles → Case Settings → [gap] → Import Folders
 
 ## Installation
 
@@ -99,6 +106,9 @@ public/
 - **Windows SmartScreen**: Click "More info" → "Run anyway"
 - **PDF not working**: Use `npm run dev-electron`, not `npm start`
 - **GitHub Actions 403**: Add `permissions: contents: write` to workflow
+
+## Current Development
+**Next Task**: Implement bundle edit dialogue for modifying existing bundles
 
 ## Contributing
 1. Follow TypeScript patterns and ESLint rules
