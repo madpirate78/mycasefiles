@@ -462,6 +462,65 @@ docs/
 4. **Case Number Variations**: New case number formats may require pattern updates
 5. **OCR Processing**: Manual OCR takes 10-15 seconds but provides high-quality text extraction for scanned documents
 
+## 🛠️ Deployment Troubleshooting
+
+### Windows Installation Issues
+
+#### "Cannot find module" errors
+**Problem**: App crashes on launch with "Cannot find module 'pdf-parse'" or similar
+**Solution**: 
+- Ensure all runtime dependencies are in `dependencies` (not `devDependencies`)
+- Native Node.js modules must be production dependencies for Electron packaging
+- Fixed in v0.1.2+
+
+#### "Unknown publisher" warnings
+**Problem**: Windows SmartScreen blocks installation
+**Solution**:
+- Click "More info" → "Run anyway" 
+- Or: Purchase code signing certificate for production distribution
+- Expected behavior for unsigned applications
+
+#### Installation permission errors
+**Problem**: Cannot install or run the application
+**Solution**:
+- Run installer as Administrator
+- Check Windows User Account Control settings
+- Ensure antivirus isn't blocking the installation
+
+### GitHub Actions Build Issues
+
+#### Build fails with dependency errors
+**Problem**: GitHub Actions build fails with missing modules
+**Solution**:
+- Check `package.json` dependencies vs devDependencies
+- Ensure all runtime modules are in `dependencies`
+- Verify Node.js version compatibility (use v18+)
+
+#### Release not created
+**Problem**: Version tag pushed but no release appears
+**Solution**:
+- Check GitHub Actions logs for build errors
+- Verify `GITHUB_TOKEN` permissions in repository settings
+- Ensure tag format matches `v*` pattern (e.g., v0.1.2)
+
+### Local Development Issues
+
+#### Electron fails to start on WSL/Linux
+**Problem**: Missing system libraries for Electron
+**Solution**:
+```bash
+sudo apt install -y libnss3-dev libatk-bridge2.0-dev libdrm2 \
+libxkbcommon-dev libxcomposite-dev libxdamage-dev libxrandr-dev \
+libgbm-dev libxss-dev libasound2-dev
+```
+
+#### PDF parsing not working in development
+**Problem**: PDF text extraction fails in dev mode
+**Solution**:
+- Use `npm run dev-electron` (not `npm start`)
+- Ensure Electron context is available
+- Check browser console for IPC communication errors
+
 ## 📚 Documentation
 
 - **[UI Specification](docs/UI_SPEC.md)** - Complete design system and user experience guidelines
