@@ -76,6 +76,7 @@ interface FormField {
   placeholder?: string;
   required?: boolean;
   options?: { value: string; label: string }[];
+  showIf?: (metadata: any) => boolean;
 }
 
 interface SectionConfig {
@@ -273,7 +274,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           if (pdfData.documentType && !finalMetadata.documentType && !finalMetadata.orderType) {
             // Map PDF document type to form document type
             if (pdfData.documentType === 'order' && finalMetadata.section === 'orders') {
-              finalMetadata.orderType = 'interim_order'; // Default to interim order for all matters
+              finalMetadata.orderType = 'order'; // Default to order type
+            } else if (pdfData.documentType === 'application' && finalMetadata.section === 'orders') {
+              finalMetadata.orderType = 'application'; // Default to application type
             }
             // For applications, filename parsing is usually better
           }
@@ -437,52 +440,28 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       }
     },
     {
-      id: 'applications',
-      label: 'Applications',
-      fields: [
-        { key: 'documentType', label: 'Document Type', type: 'select', required: true,
-          options: [
-            { value: 'c100', label: 'C100 - Child Arrangements Application' },
-            { value: 'fl401', label: 'FL401 - Non-molestation Application' },
-            { value: 'fl402', label: 'FL402 - Occupation Order Application' },
-            { value: 'c1', label: 'C1 - Application for Order' },
-            { value: 'other_child_application', label: 'Other Child Application' },
-            { value: 'interim_order', label: 'Interim Order' },
-            { value: 'final_order', label: 'Final Order' },
-            { value: 'directions_order', label: 'Directions Order' },
-            { value: 'consent_order', label: 'Consent Order' }
-          ]
-        },
-        { key: 'reference', label: 'Reference', type: 'text', placeholder: 'e.g., FL401, C100', required: true },
-        { key: 'date', label: 'Date', type: 'date', required: true }
-      ],
-      displayNameFormat: (meta) => {
-        const parts = ['child', toSafeString(meta.documentType) || 'document'];
-        if (meta.reference) parts.push(toSafeString(meta.reference).replace(/\s+/g, '_'));
-        if (meta.date) parts.push(toSafeString(meta.date));
-        return parts.join('_');
-      }
-    },
-    {
       id: 'orders',
-      label: 'Orders',
+      label: 'Applications, Orders & Judgments',
       fields: [
-        { key: 'orderType', label: 'Order Type', type: 'select', required: true,
+        { key: 'orderType', label: 'Document Type', type: 'select', required: true,
           options: [
-            { value: 'final_order', label: 'Final Order' },
-            { value: 'interim_order', label: 'Interim Order (including directions)' },
-            { value: 'other_order', label: 'Other Order' }
+            { value: 'application', label: 'Application' },
+            { value: 'order', label: 'Order' },
+            { value: 'judgment', label: 'Judgment' },
+            { value: 'transcript', label: 'Transcript' }
           ]
         },
         { key: 'courtReference', label: 'Court Reference', type: 'text', placeholder: 'e.g., AB12C34567', required: true },
-        { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., HHJ Smith' },
-        { key: 'date', label: 'Order Date', type: 'date', required: true }
+        { key: 'date', label: 'Date', type: 'date', required: true },
+        { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., HHJ Smith',
+          showIf: (meta) => meta.orderType !== 'application' },
+        { key: 'details', label: 'Details', type: 'textarea', placeholder: 'Additional details about this document' }
       ],
       displayNameFormat: (meta) => {
-        const parts = ['order', meta.orderType || 'document'];
-        if (meta.courtReference) parts.push(meta.courtReference.replace(/\s+/g, '_'));
-        if (meta.judgeName) parts.push(meta.judgeName.replace(/\s+/g, '_'));
-        if (meta.date) parts.push(meta.date);
+        const parts = [toSafeString(meta.orderType) || 'court'];
+        if (meta.courtReference) parts.push(toSafeString(meta.courtReference).replace(/\s+/g, '_'));
+        if (meta.judgeName) parts.push(toSafeString(meta.judgeName).replace(/\s+/g, '_'));
+        if (meta.date) parts.push(toSafeString(meta.date));
         return parts.join('_');
       }
     },
@@ -599,48 +578,28 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           }
         },
         {
-          id: 'applications',
-          label: 'Financial Applications',
-          fields: [
-            { key: 'documentType', label: 'Document Type', type: 'select', required: true,
-              options: [
-                { value: 'form_a', label: 'Form A - Financial Application' },
-                { value: 'form_e', label: 'Form E - Financial Statement' },
-                { value: 'd81', label: 'D81 - Statement of Information' },
-                { value: 'financial_dispute_resolution', label: 'FDR - Financial Dispute Resolution' },
-                { value: 'other_financial_application', label: 'Other Financial Application' }
-              ]
-            },
-            { key: 'reference', label: 'Reference', type: 'text', placeholder: 'e.g., FA-2024-001', required: true },
-            { key: 'date', label: 'Date', type: 'date', required: true }
-          ],
-          displayNameFormat: (meta) => {
-            const parts = ['financial', meta.documentType || 'document'];
-            if (meta.reference) parts.push(meta.reference.replace(/\s+/g, '_'));
-            if (meta.date) parts.push(meta.date);
-            return parts.join('_');
-          }
-        },
-        {
           id: 'orders',
-          label: 'Financial Orders',
+          label: 'Applications, Orders & Judgments',
           fields: [
-            { key: 'orderType', label: 'Order Type', type: 'select', required: true,
+            { key: 'orderType', label: 'Document Type', type: 'select', required: true,
               options: [
-                { value: 'final_order', label: 'Final Order' },
-                { value: 'interim_order', label: 'Interim Order (including directions)' },
-                { value: 'other_order', label: 'Other Order' }
+                { value: 'application', label: 'Application' },
+                { value: 'order', label: 'Order' },
+                { value: 'judgment', label: 'Judgment' },
+                { value: 'transcript', label: 'Transcript' }
               ]
             },
             { key: 'courtReference', label: 'Court Reference', type: 'text', placeholder: 'e.g., FD23D00123', required: true },
-            { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., DJ Smith' },
-            { key: 'date', label: 'Order Date', type: 'date', required: true }
+            { key: 'date', label: 'Date', type: 'date', required: true },
+            { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., DJ Smith',
+              showIf: (meta) => meta.orderType !== 'application' },
+            { key: 'details', label: 'Details', type: 'textarea', placeholder: 'Additional details about this document' }
           ],
           displayNameFormat: (meta) => {
-            const parts = ['financial_order', meta.orderType || 'document'];
-            if (meta.courtReference) parts.push(meta.courtReference.replace(/\s+/g, '_'));
-            if (meta.judgeName) parts.push(meta.judgeName.replace(/\s+/g, '_'));
-            if (meta.date) parts.push(meta.date);
+            const parts = [toSafeString(meta.orderType) || 'court'];
+            if (meta.courtReference) parts.push(toSafeString(meta.courtReference).replace(/\s+/g, '_'));
+            if (meta.judgeName) parts.push(toSafeString(meta.judgeName).replace(/\s+/g, '_'));
+            if (meta.date) parts.push(toSafeString(meta.date));
             return parts.join('_');
           }
         },
@@ -975,15 +934,22 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             </div>
 
             {/* Dynamic fields based on selected section */}
-            {currentSectionConfig && currentSectionConfig.fields.map((field) => (
-              <div key={field.key} className="form-group">
-                <label>
-                  {field.label}
-                  {field.required && <span className="required-asterisk"> *</span>}
-                </label>
-                {renderField(field)}
-              </div>
-            ))}
+            {currentSectionConfig && currentSectionConfig.fields.map((field) => {
+              // Check if field should be shown
+              if (field.showIf && !field.showIf(metadata)) {
+                return null;
+              }
+              
+              return (
+                <div key={field.key} className="form-group">
+                  <label>
+                    {field.label}
+                    {field.required && <span className="required-asterisk"> *</span>}
+                  </label>
+                  {renderField(field)}
+                </div>
+              );
+            })}
 
             {/* OCR Status and Control */}
             {ocrStatus.isScanned && (

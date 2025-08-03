@@ -4,10 +4,13 @@
 
 ⚠️ **Desktop-only**: Requires Electron for PDF extraction, OCR, and file system access. Browser deployment not supported.
 
+**Latest Update**: Consolidated court documents - Applications, Orders, Judgments, and Transcripts now in single section with streamlined metadata fields.
+
 ## Features
 
 ### Document Management
-- **Smart Organization**: Auto-assigns orders, applications, and expert reports to correct sections
+- **Smart Organization**: Auto-assigns court documents (applications, orders, judgments, transcripts) and expert reports
+- **Consolidated Court Section**: Applications, Orders & Judgments in one organized section
 - **Two-Vault System**: Separate workspaces for Child and Financial matters
 - **Folder Import**: Import pre-organized folders with automatic section mapping
 - **"Take a Closer Look"**: PDF preview when filename isn't clear
@@ -20,6 +23,8 @@
 - **OCR Support**: Manual OCR for scanned documents with confidence scoring
 
 ### Document Vault
+- **Simplified Metadata**: Court reference, date, judge name (when applicable), and details field
+- **Smart Fields**: Judge name only shows for orders/judgments/transcripts, not applications
 - **Status Indicators**: Shows page selections (📄 5/10), metadata (✓), OCR status (🔍)
 - **Page Selection**: Carousel interface for selecting specific pages
 - **Advanced Search**: Filter by section, search across metadata

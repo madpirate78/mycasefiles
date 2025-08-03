@@ -17,17 +17,25 @@ export class SectionMapper {
       
       // Child arrangements forms
       if (['C100', 'C1A', 'C78', 'C79', 'FL401', 'FL402', 'FL403'].includes(formType)) {
-        return 'applications';
+        return 'orders';
       }
       
       // Financial forms
       if (['FORM A', 'FORM E', 'D81'].includes(formType)) {
-        return 'applications';
+        return 'orders';
       }
     }
     
     // Check filename for keywords
     const lowerName = filename.toLowerCase();
+    
+    // Check for orders, judgments, transcripts, and applications
+    if (lowerName.includes('order') || lowerName.includes('judgment') || 
+        lowerName.includes('decree') || lowerName.includes('transcript') ||
+        lowerName.includes('hearing') || lowerName.includes('ruling') ||
+        lowerName.includes('application') || lowerName.includes('apply')) {
+      return 'orders';
+    }
     
     if (lowerName.includes('statement') || lowerName.includes('affidavit')) {
       return 'statements';
@@ -55,12 +63,8 @@ export class SectionMapper {
       return 'preliminary';
     }
     
-    // Default to applications for court documents
-    if (data.documentType === 'application') {
-      return 'applications';
-    }
-    
-    if (data.documentType === 'order') {
+    // Default to orders section for applications and orders
+    if (data.documentType === 'application' || data.documentType === 'order') {
       return 'orders';
     }
     
@@ -173,8 +177,10 @@ export class SectionMapper {
     
     // Handle order detection from filename
     if (data.documentType === 'order' && metadata.section === 'orders') {
-      // Map to orderType field for orders section - default to interim for both child and finance
-      metadata.orderType = 'interim_order'; // Default for all matters (most common)
+      // Map to orderType field for orders section
+      metadata.orderType = 'order'; // Default to order type
+    } else if (data.documentType === 'application' && metadata.section === 'orders') {
+      metadata.orderType = 'application'; // Default to application type
     }
 
     // Map preliminary document types

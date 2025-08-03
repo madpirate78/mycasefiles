@@ -125,8 +125,7 @@ class VaultService {
     if (vaultType === 'child') {
       return [
         { id: 'preliminary', label: 'Preliminary Documents' },
-        { id: 'applications', label: 'Applications' },
-        { id: 'orders', label: 'Orders' },
+        { id: 'orders', label: 'Applications, Orders & Judgments' },
         { id: 'statements', label: 'Statements and Affidavits' },
         { id: 'experts', label: 'Expert Reports' },
         { id: 'care', label: 'Care Plans' },
@@ -136,8 +135,7 @@ class VaultService {
     } else {
       return [
         { id: 'preliminary', label: 'Preliminary Documents' },
-        { id: 'applications', label: 'Financial Applications' },
-        { id: 'orders', label: 'Financial Orders' },
+        { id: 'orders', label: 'Applications, Orders & Judgments' },
         { id: 'statements', label: 'Statements and Affidavits' },
         { id: 'disclosure', label: 'Financial Disclosure' },
         { id: 'valuations', label: 'Property Valuations' },

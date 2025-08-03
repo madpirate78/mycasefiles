@@ -40,8 +40,8 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQu
     
     // High confidence indicators - these should auto-assign
     const highConfidencePatterns = [
-      { keywords: ['order'], section: 'orders' },
-      { keywords: ['application', 'c100', 'fl401', 'form a', 'form e'], section: 'applications' },
+      { keywords: ['order', 'judgment', 'decree', 'ruling'], section: 'orders' },
+      { keywords: ['application', 'c100', 'fl401', 'form a', 'form e', 'transcript', 'hearing'], section: 'orders' },
       { keywords: ['cafcass', 'social services report', 'expert report'], section: 'experts' }
     ];
     
@@ -191,8 +191,8 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQu
             <div className="stat-card">
               <span className="stat-icon">⚖️</span>
               <div className="stat-info">
-                <span className="stat-number">{uploadedFiles.filter(f => (f as any).section === 'applications').length}</span>
-                <span className="stat-label">Orders</span>
+                <span className="stat-number">{uploadedFiles.filter(f => (f as any).section === 'orders').length}</span>
+                <span className="stat-label">Court Documents</span>
               </div>
             </div>
             <div className="stat-card">

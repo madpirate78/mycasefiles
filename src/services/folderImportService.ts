@@ -71,8 +71,8 @@ class FolderImportService {
   private addSpecificPatternMappings(mappings: FolderMapping[], vaultType: VaultType): void {
     // Common court bundle patterns
     const commonPatterns = [
-      { patterns: ['orders', 'court orders', 'judicial orders'], sectionId: 'orders', confidence: 'high' as const },
-      { patterns: ['applications', 'forms', 'court forms'], sectionId: 'applications', confidence: 'high' as const },
+      { patterns: ['orders', 'court orders', 'judicial orders', 'judgments', 'transcripts'], sectionId: 'orders', confidence: 'high' as const },
+      { patterns: ['applications', 'forms', 'court forms', 'hearing'], sectionId: 'orders', confidence: 'high' as const },
       { patterns: ['statements', 'witness statements', 'position statements'], sectionId: 'statements', confidence: 'high' as const },
       { patterns: ['evidence', 'exhibits'], sectionId: 'evidence', confidence: 'high' as const },
       { patterns: ['experts', 'expert reports', 'cafcass'], sectionId: 'experts', confidence: 'high' as const },
@@ -86,7 +86,7 @@ class FolderImportService {
     if (vaultType === 'child') {
       const childPatterns = [
         { patterns: ['cafcass reports', 'section 7', 's7'], sectionId: 'experts', confidence: 'high' as const },
-        { patterns: ['child arrangements', 'contact', 'residence'], sectionId: 'applications', confidence: 'medium' as const }
+        { patterns: ['child arrangements', 'contact', 'residence'], sectionId: 'orders', confidence: 'medium' as const }
       ];
       commonPatterns.push(...childPatterns);
     }
@@ -94,7 +94,7 @@ class FolderImportService {
     // Finance-specific patterns
     if (vaultType === 'finance') {
       const financePatterns = [
-        { patterns: ['financial', 'form e', 'forme', 'financial disclosure'], sectionId: 'applications', confidence: 'high' as const },
+        { patterns: ['financial', 'form e', 'forme', 'financial disclosure'], sectionId: 'orders', confidence: 'high' as const },
         { patterns: ['valuations', 'property', 'assets'], sectionId: 'evidence', confidence: 'medium' as const }
       ];
       commonPatterns.push(...financePatterns);
