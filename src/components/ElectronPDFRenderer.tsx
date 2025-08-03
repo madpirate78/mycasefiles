@@ -63,7 +63,7 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to load PDF');
       onError?.(err instanceof Error ? err.message : 'Failed to load PDF');
     }
-  }, [onPDFExtracted]);
+  }, [onLoad, onError]);
 
   // Sync with external page number
   useEffect(() => {
