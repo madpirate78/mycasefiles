@@ -161,6 +161,16 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                     ocrConfidence = ocrResult.confidence;
                     pdfText = ocrResult.text; // Use OCR text for parsing
                     console.log(`✅ OCR completed: ${ocrText.length} chars, ${ocrConfidence?.toFixed(1)}% confidence`);
+                    
+                    // Replace original PDF with searchable version if available
+                    if (ocrResult.searchablePdf) {
+                      console.log('📝 Replacing original PDF with searchable version');
+                      const searchableBlob = new Blob([ocrResult.searchablePdf], { type: 'application/pdf' });
+                      const searchableFile = new File([searchableBlob], file.name, { type: 'application/pdf' });
+                      
+                      // Update the file data with searchable PDF
+                      file.data = searchableFile;
+                    }
                   } else {
                     console.error(`❌ OCR failed for ${file.name}:`, ocrResult.error);
                   }

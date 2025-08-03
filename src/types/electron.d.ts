@@ -20,8 +20,21 @@ declare global {
           confidence?: number;
           length?: number;
           error?: string;
+          lines?: Array<{
+            text: string;
+            bbox: { x0: number; y0: number; x1: number; y1: number };
+          }>;
+          paragraphs?: Array<{
+            text: string;
+            bbox: { x0: number; y0: number; x1: number; y1: number };
+          }>;
+          words?: Array<{
+            text: string;
+            bbox: { x0: number; y0: number; x1: number; y1: number };
+          }>;
         }>;
         extractionMethod?: 'OCR';
+        searchablePdf?: ArrayBuffer; // New searchable PDF with text overlay
         error?: string;
       }>;
       createPDFBundle: (bundleData: any) => Promise<{

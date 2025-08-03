@@ -241,15 +241,118 @@ async function performOCROnPDF(pdfBuffer) {
     for (let i = 0; i < imagePaths.length; i++) {
       const imagePath = imagePaths[i];
       try {
-        const { data: { text, confidence } } = await Tesseract.recognize(imagePath, 'eng', {
-          tessedit_pageseg_mode: Tesseract.PSM.SINGLE_BLOCK, // Better for document pages
-          tessedit_ocr_engine_mode: Tesseract.OEM.LSTM_ONLY,  // More accurate engine
+        // Capture full Tesseract.js data structure including lines, paragraphs, words
+        // CRITICAL: v6 requires worker API for hierarchical structure output
+        const worker = await Tesseract.createWorker('eng');
+        let data;
+        
+        try {
+          const result = await worker.recognize(imagePath, {}, {
+            text: true,
+            blocks: true  // Enable hierarchical data structure (lines, paragraphs, words)
+          });
+          data = result.data;
+          
+          await worker.terminate();
+        } catch (workerError) {
+          await worker.terminate();
+          throw workerError;
+        }
+        
+        // Debug: Log the raw data structure to understand what Tesseract is returning
+        console.log(`🔍 Page ${i + 1} raw data structure:`, {
+          hasLines: !!data.lines,
+          linesLength: data.lines?.length || 0,
+          hasParagraphs: !!data.paragraphs,
+          paragraphsLength: data.paragraphs?.length || 0,
+          hasWords: !!data.words,
+          wordsLength: data.words?.length || 0,
+          hasBlocks: !!data.blocks,
+          blocksLength: data.blocks?.length || 0
         });
         
-        console.log(`✅ Page ${i + 1}: ${confidence.toFixed(1)}% confidence, ${text.length} chars`);
+        // Debug: Inspect blocks structure to find hierarchical data
+        if (data.blocks && data.blocks.length > 0) {
+          console.log(`🔍 Page ${i + 1} first block structure:`, {
+            hasLines: !!data.blocks[0].lines,
+            linesLength: data.blocks[0].lines?.length || 0,
+            hasParagraphs: !!data.blocks[0].paragraphs,
+            paragraphsLength: data.blocks[0].paragraphs?.length || 0,
+            hasWords: !!data.blocks[0].words,
+            wordsLength: data.blocks[0].words?.length || 0,
+            blockKeys: Object.keys(data.blocks[0])
+          });
+          
+          // Debug first paragraph structure if available
+          if (data.blocks[0].paragraphs && data.blocks[0].paragraphs.length > 0) {
+            console.log(`🔍 Page ${i + 1} first paragraph structure:`, {
+              hasLines: !!data.blocks[0].paragraphs[0].lines,
+              linesLength: data.blocks[0].paragraphs[0].lines?.length || 0,
+              hasWords: !!data.blocks[0].paragraphs[0].words,
+              wordsLength: data.blocks[0].paragraphs[0].words?.length || 0,
+              paragraphKeys: Object.keys(data.blocks[0].paragraphs[0])
+            });
+          }
+        }
         
-        fullText += text + '\n\n';
-        ocrResults.push({ page: i + 1, text, confidence, length: text.length });
+        const pageText = data.text || '';
+        const pageConfidence = data.confidence || 0;
+        let pageLines = data.lines || [];
+        let pageParagraphs = data.paragraphs || [];
+        let pageWords = data.words || [];
+        const pageBlocks = data.blocks || [];
+        
+        // Extract hierarchical data from blocks if not available at top level
+        if (pageLines.length === 0 && pageBlocks.length > 0) {
+          console.log(`📄 Page ${i + 1}: Extracting hierarchical data from blocks structure...`);
+          
+          // Flatten data from all blocks
+          pageBlocks.forEach(block => {
+            // Extract paragraphs from block
+            if (block.paragraphs && block.paragraphs.length > 0) {
+              pageParagraphs = pageParagraphs.concat(block.paragraphs);
+              
+              // Extract lines from paragraphs
+              block.paragraphs.forEach(paragraph => {
+                if (paragraph.lines && paragraph.lines.length > 0) {
+                  pageLines = pageLines.concat(paragraph.lines);
+                  
+                  // Extract words from lines
+                  paragraph.lines.forEach(line => {
+                    if (line.words && line.words.length > 0) {
+                      pageWords = pageWords.concat(line.words);
+                    }
+                  });
+                }
+              });
+            }
+            
+            // Also check for direct lines/words in block (fallback)
+            if (block.lines && block.lines.length > 0) {
+              pageLines = pageLines.concat(block.lines);
+            }
+            if (block.words && block.words.length > 0) {
+              pageWords = pageWords.concat(block.words);
+            }
+          });
+          
+          console.log(`✅ Page ${i + 1}: Extracted ${pageLines.length} lines, ${pageParagraphs.length} paragraphs, ${pageWords.length} words from blocks hierarchy`);
+        }
+        
+        console.log(`✅ Page ${i + 1}: ${pageConfidence.toFixed(1)}% confidence, ${pageText.length} chars`);
+        console.log(`📄 Page ${i + 1}: ${pageLines.length} lines, ${pageParagraphs.length} paragraphs, ${pageWords.length} words`);
+        
+        fullText += pageText + '\n\n';
+        ocrResults.push({ 
+          page: i + 1, 
+          text: pageText, 
+          confidence: pageConfidence, 
+          length: pageText.length,
+          lines: pageLines,
+          paragraphs: pageParagraphs,
+          words: pageWords,
+          blocks: pageBlocks
+        });
         
         // Clean up temporary image file
         try {
@@ -281,16 +384,31 @@ async function performOCROnPDF(pdfBuffer) {
       console.warn('⚠️ Could not fully clean up temporary files:', cleanupError.message);
     }
     
-    const avgConfidence = ocrResults.filter(r => r.confidence).reduce((sum, r) => sum + r.confidence, 0) / ocrResults.filter(r => r.confidence).length;
+    const validResults = ocrResults.filter(r => r.confidence);
+    const avgConfidence = validResults.length > 0 
+      ? validResults.reduce((sum, r) => sum + r.confidence, 0) / validResults.length 
+      : 0;
     
     console.log(`🎉 OCR completed: ${fullText.length} chars, ${avgConfidence.toFixed(1)}% confidence`);
+    
+    // Create searchable PDF with invisible text layers
+    console.log('📝 Creating searchable PDF with text overlay...');
+    
+    // Get image dimensions from poppler conversion options or use defaults
+    const imageDimensions = { 
+      width: options.resolutionXYAxis * 8.5,  // Approximate A4 width at 300 DPI
+      height: options.resolutionXYAxis * 11   // Approximate A4 height at 300 DPI  
+    };
+    
+    const searchablePdfBuffer = await createSearchablePDF(pdfBuffer, ocrResults, imageDimensions);
     
     return {
       success: true,
       text: fullText.trim(),
       confidence: avgConfidence,
       pages: ocrResults,
-      method: 'OCR'
+      method: 'OCR',
+      searchablePdf: searchablePdfBuffer // Return the searchable PDF
     };
     
   } catch (error) {
@@ -341,6 +459,68 @@ ipcMain.handle('parse-pdf', async (event, pdfBuffer) => {
 });
 
 // IPC handler for manual OCR processing
+
+// Helper function to create searchable PDF with OCR text overlay
+async function createSearchablePDF(originalPdfBuffer, ocrResults, imageDimensions) {
+  try {
+    console.log('🔧 Loading original PDF for text overlay...');
+    const originalPdf = await PDFDocument.load(originalPdfBuffer);
+    const newPdf = await PDFDocument.create();
+    const helvetica = await newPdf.embedFont(StandardFonts.Helvetica);
+    
+    console.log(`📄 Processing ${originalPdf.getPageCount()} pages for text overlay...`);
+    
+    for (let pageIndex = 0; pageIndex < originalPdf.getPageCount(); pageIndex++) {
+      // Copy original page
+      const [copiedPage] = await newPdf.copyPages(originalPdf, [pageIndex]);
+      newPdf.addPage(copiedPage);
+      
+      const { width: pdfWidth, height: pdfHeight } = copiedPage.getSize();
+      console.log(`📐 Page ${pageIndex + 1}: PDF dimensions ${pdfWidth}x${pdfHeight}, Image dimensions ${imageDimensions.width}x${imageDimensions.height}`);
+      
+      // Calculate scaling factors
+      const scaleX = pdfWidth / imageDimensions.width;
+      const scaleY = pdfHeight / imageDimensions.height;
+      
+      // Get OCR data for this page
+      const pageOcr = ocrResults[pageIndex];
+      if (pageOcr && pageOcr.lines) {
+        console.log(`📝 Adding ${pageOcr.lines.length} text lines to page ${pageIndex + 1}...`);
+        
+        // Add invisible text using Tesseract's line groupings for natural selection
+        pageOcr.lines.forEach((line, lineIndex) => {
+          if (line.text.trim().length > 0 && line.bbox) {
+            const scaledX = line.bbox.x0 * scaleX;
+            const scaledY = pdfHeight - (line.bbox.y1 * scaleY); // PDF coords are bottom-up
+            const scaledFontSize = Math.max(8, (line.bbox.y1 - line.bbox.y0) * scaleY); // Minimum 8pt font
+            
+            copiedPage.drawText(line.text.trim(), {
+              x: scaledX,
+              y: scaledY,
+              size: scaledFontSize,
+              font: helvetica,
+              color: rgb(0, 0, 0),
+              opacity: 0, // Invisible but selectable
+            });
+            
+            if (lineIndex < 3) { // Log first few lines for debugging
+              console.log(`  Line ${lineIndex + 1}: "${line.text.trim()}" at (${scaledX.toFixed(1)}, ${scaledY.toFixed(1)}) size ${scaledFontSize.toFixed(1)}`);
+            }
+          }
+        });
+      }
+    }
+    
+    console.log('✅ Searchable PDF created successfully');
+    return await newPdf.save();
+    
+  } catch (error) {
+    console.error('❌ Failed to create searchable PDF:', error);
+    // Return original PDF if overlay fails
+    return originalPdfBuffer;
+  }
+}
+
 ipcMain.handle('ocr-pdf', async (event, pdfBuffer) => {
   try {
     console.log('🔍 Manual OCR requested for PDF buffer of size:', pdfBuffer.length);
@@ -354,7 +534,8 @@ ipcMain.handle('ocr-pdf', async (event, pdfBuffer) => {
         text: ocrResult.text,
         confidence: ocrResult.confidence,
         pages: ocrResult.pages,
-        extractionMethod: 'OCR'
+        extractionMethod: 'OCR',
+        searchablePdf: ocrResult.searchablePdf
       };
     } else {
       console.error('❌ Manual OCR failed:', ocrResult.error);

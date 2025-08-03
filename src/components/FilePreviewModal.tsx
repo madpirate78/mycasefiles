@@ -369,6 +369,16 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       if (ocrResult.success && ocrResult.text) {
         console.log(`✅ OCR completed: ${ocrResult.text.length} chars, ${ocrResult.confidence?.toFixed(1)}% confidence`);
         
+        // Replace original PDF with searchable version if available
+        if (ocrResult.searchablePdf) {
+          console.log('📝 Replacing original PDF with searchable version');
+          const searchableBlob = new Blob([ocrResult.searchablePdf], { type: 'application/pdf' });
+          const searchableFile = new File([searchableBlob], file.name, { type: 'application/pdf' });
+          
+          // Update the file data with searchable PDF - useMemo will trigger re-render
+          (file as any).data = searchableFile;
+        }
+        
         // Update OCR status
         setOcrStatus(prev => ({
           ...prev,
@@ -377,9 +387,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           textLength: ocrResult.text.length,
           confidence: ocrResult.confidence
         }));
-        
-        // Store OCR text for parsing
-        // setPdfText(ocrResult.text);
         
         // Re-run extraction with OCR text
         try {
