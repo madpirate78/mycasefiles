@@ -426,6 +426,148 @@ body {
   margin-bottom: 0;
 }
 
+/* Verify Documents Modal */
+.verify-modal {
+  width: 90vw;
+  max-width: 1200px;
+  height: 85vh;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.verify-modal .modal-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.verify-modal .modal-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.verify-modal .modal-body {
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.document-sections {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1px;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+
+.document-section {
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.section-header {
+  background-color: #f8f9fa;
+  padding: 8px 12px;
+  border-bottom: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.section-count {
+  font-size: 11px;
+  color: #666;
+  margin-left: 8px;
+}
+
+.document-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.no-documents {
+  padding: 20px 8px;
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.document-item {
+  margin-bottom: 1px;
+}
+
+.document-item.no-date {
+  background-color: #ffeaea;
+  border-radius: 2px;
+}
+
+.document-checkbox {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 2px;
+  transition: background-color 0.1s;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.document-checkbox:hover {
+  background-color: #f8f9fa;
+}
+
+.document-checkbox input[type="checkbox"] {
+  margin: 0 6px 0 0;
+  flex-shrink: 0;
+}
+
+.document-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.document-name {
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.document-meta {
+  font-size: 11px;
+  color: #666;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.verify-modal .modal-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #e9ecef;
+  flex-shrink: 0;
+}
+
+.selected-count {
+  font-size: 13px;
+  color: #666;
+  margin-right: auto;
+}
+
 .nav-icon {
   font-size: 18px;
   margin-right: var(--spacing-sm);
