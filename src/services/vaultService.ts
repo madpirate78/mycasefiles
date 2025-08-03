@@ -9,11 +9,19 @@ class VaultService {
   async initDB() {
     if (this.db) return this.db;
 
-    this.db = await openDB(this.dbName, 4, {
+    this.db = await openDB(this.dbName, 5, {
       upgrade(db, oldVersion) {
         // Create vault settings store if it doesn't exist
         if (!db.objectStoreNames.contains('vaultSettings')) {
           db.createObjectStore('vaultSettings');
+        }
+        // Ensure documents store exists too (from main indexedDBService)
+        if (!db.objectStoreNames.contains('documents')) {
+          db.createObjectStore('documents', { keyPath: 'id', autoIncrement: true });
+        }
+        // Ensure bundles store exists too (from bundleService)
+        if (!db.objectStoreNames.contains('bundles')) {
+          db.createObjectStore('bundles', { keyPath: 'id', autoIncrement: true });
         }
       },
     });

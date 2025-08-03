@@ -1,7 +1,7 @@
 // src/services/indexedDBService.ts
 
 const DB_NAME = 'MyCaseFilesDB';
-const DB_VERSION = 3; // Increased for new schema
+const DB_VERSION = 5; // Increased for bundles store
 const STORE_NAME = 'documents';
 
 let db: IDBDatabase;
@@ -68,6 +68,14 @@ export const openDB = (): Promise<IDBDatabase> => {
       db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+      // Create vault settings store for VaultService
+      if (!db.objectStoreNames.contains('vaultSettings')) {
+        db.createObjectStore('vaultSettings');
+      }
+      // Create bundles store for BundleService
+      if (!db.objectStoreNames.contains('bundles')) {
+        db.createObjectStore('bundles', { keyPath: 'id', autoIncrement: true });
       }
     };
 

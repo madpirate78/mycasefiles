@@ -401,6 +401,31 @@ body {
   border-left: 3px solid var(--primary-blue);
 }
 
+/* Navigation separator */
+.nav-separator {
+  height: 1px;
+  background-color: #e9ecef;
+  margin: 12px 16px;
+  border: none;
+}
+
+/* Bundle form layout */
+.bundle-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  margin-bottom: 0;
+}
+
 .nav-icon {
   font-size: 18px;
   margin-right: var(--spacing-sm);

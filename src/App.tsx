@@ -387,13 +387,6 @@ function App() {
             <span className="nav-label">Home</span>
           </button>
           <button 
-            className={`nav-btn ${currentView === 'bundles' ? 'active' : ''}`}
-            onClick={() => setCurrentView('bundles')}
-          >
-            <span className="nav-icon">📁</span>
-            <span className="nav-label">Bundles</span>
-          </button>
-          <button 
             className={`nav-btn ${currentView === 'documents' ? 'active' : ''}`}
             onClick={() => setCurrentView('documents')}
           >
@@ -401,11 +394,11 @@ function App() {
             <span className="nav-label">Documents</span>
           </button>
           <button 
-            className={`nav-btn ${currentView === 'import' ? 'active' : ''}`}
-            onClick={() => setCurrentView('import')}
+            className={`nav-btn ${currentView === 'bundles' ? 'active' : ''}`}
+            onClick={() => setCurrentView('bundles')}
           >
-            <span className="nav-icon">📂</span>
-            <span className="nav-label">Import Folders</span>
+            <span className="nav-icon">📁</span>
+            <span className="nav-label">Bundles</span>
           </button>
           <button 
             className={`nav-btn ${currentView === 'settings' ? 'active' : ''}`}
@@ -413,6 +406,14 @@ function App() {
           >
             <span className="nav-icon">⚙️</span>
             <span className="nav-label">Case Settings</span>
+          </button>
+          <div className="nav-separator"></div>
+          <button 
+            className={`nav-btn ${currentView === 'import' ? 'active' : ''}`}
+            onClick={() => setCurrentView('import')}
+          >
+            <span className="nav-icon">📂</span>
+            <span className="nav-label">Import Folders</span>
           </button>
         </nav>
 
