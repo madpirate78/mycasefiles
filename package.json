@@ -1,6 +1,6 @@
 {
   "name": "mycasefiles",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Desktop legal document management system for self-represented litigants",
   "author": "MyCaseFiles",
   "private": true,
@@ -86,7 +86,9 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "public/logo512.png",
