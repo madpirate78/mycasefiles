@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import { VaultType } from '../types/vault';
 import FileUpload from './FileUpload';
@@ -25,15 +25,15 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQu
   console.log(`📊 Dashboard: ${uploadedFiles.length} total files, ${uncategorizedFiles.length} uncategorized files`);
   console.log('Uncategorized files:', uncategorizedFiles.map(f => ({ name: f.name, section: (f as any).section })));
 
-  const handleSectionChange = (file: StoredFile, section: string) => {
+  const handleSectionChange = useCallback((file: StoredFile, section: string) => {
     if (file.id && section !== 'uncategorized') {
       onQuickOrganize(file.id, section, currentVault);
     }
-  };
+  }, [onQuickOrganize, currentVault]);
 
-  const getSuggestedSectionForFile = (file: StoredFile): string => {
+  const getSuggestedSectionForFile = useCallback((file: StoredFile): string => {
     return getSuggestedSection(file.name, currentVault);
-  };
+  }, [currentVault]);
 
   const getConfidenceLevel = (filename: string): 'high' | 'medium' | 'low' => {
     const lowerName = filename.toLowerCase();
@@ -73,7 +73,7 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQu
         handleSectionChange(file, suggestedSection);
       }
     });
-  }, [uncategorizedFiles.length]); // Run when new files are added
+  }, [uncategorizedFiles, getSuggestedSectionForFile, handleSectionChange]); // Run when new files are added
 
   const sections = vaultService.getVaultSections(currentVault);
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 interface ElectronPDFRendererProps {
   file: File;
@@ -44,7 +44,7 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
     }
   }, [file]);
 
-  const extractPDFInfo = async (pdfFile: File) => {
+  const extractPDFInfo = useCallback(async (pdfFile: File) => {
     try {
       if (!window.electron) return;
       
@@ -63,14 +63,14 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
       setError(err instanceof Error ? err.message : 'Failed to load PDF');
       onError?.(err instanceof Error ? err.message : 'Failed to load PDF');
     }
-  };
+  }, [onPDFExtracted]);
 
   // Sync with external page number
   useEffect(() => {
     if (externalPageNumber && externalPageNumber !== pageNumber) {
       setPageNumber(externalPageNumber);
     }
-  }, [externalPageNumber]);
+  }, [externalPageNumber, pageNumber]);
 
   const handleWebviewLoad = () => {
     setIsLoading(false);

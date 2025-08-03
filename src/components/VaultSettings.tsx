@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { VaultType, VaultSettings as VaultSettingsType } from '../types/vault';
 import vaultService from '../services/vaultService';
 import './VaultSettings.css';
@@ -21,9 +21,9 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
 
   useEffect(() => {
     loadSettings();
-  }, [vaultType]);
+  }, [vaultType, loadSettings]);
 
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       const vaultSettings = await vaultService.getVaultSettings(vaultType);
       setSettings(vaultSettings);
@@ -31,7 +31,7 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
     } catch (error) {
       console.error('Error loading vault settings:', error);
     }
-  };
+  }, [vaultType]);
 
   const handleSave = async () => {
     try {

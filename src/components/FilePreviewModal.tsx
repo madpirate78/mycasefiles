@@ -97,7 +97,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     section: 'other',
     description: ''
   });
-  const [pdfText, setPdfText] = useState<string>('');
+  // const [pdfText, setPdfText] = useState<string>('');
   const [ocrStatus, setOcrStatus] = useState<{
     isScanned: boolean;
     isProcessing: boolean;
@@ -290,7 +290,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
 
         // Store PDF text for future use (AI processing moved to separate page)
         if (pdfText && pdfText.length > 20) {
-          setPdfText(pdfText);
+          // setPdfText(pdfText);
           console.log('📝 PDF text stored (length:', pdfText.length, ')');
         }
 
@@ -318,7 +318,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     };
 
     populateMetadata();
-  }, [file]);
+  }, [file, vaultType]);
 
 
   // Manual OCR function

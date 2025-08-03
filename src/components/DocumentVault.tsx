@@ -249,7 +249,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                     <div className="doc-content">
                       <div className="doc-title-line">
                         <div className="doc-title-with-indicators">
-                          <a href="#" className="doc-title">{file.name}</a>
+                          <button className="doc-title link-style" onClick={() => handleEditClick(file)}>{file.name}</button>
                           <div className="doc-status-indicators">
                             {/* Page selection indicator */}
                             {file.selectedPages && file.selectedPages.length > 0 && file.totalPages && (

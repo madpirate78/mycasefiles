@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import { 
   extractPDFPages, 
@@ -41,9 +41,9 @@ const PagePruneModal: React.FC<PagePruneModalProps> = ({
         }
       };
     }
-  }, [isOpen, file]);
+  }, [isOpen, file, loadPDFPages]);
 
-  const loadPDFPages = async () => {
+  const loadPDFPages = useCallback(async () => {
     if (!file) return;
 
     setLoading(true);
@@ -76,7 +76,7 @@ const PagePruneModal: React.FC<PagePruneModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [file]);
 
   const togglePage = (pageNumber: number) => {
     const updatedPages = pages.map(page => 

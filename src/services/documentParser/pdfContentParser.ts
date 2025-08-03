@@ -7,7 +7,7 @@ export class PDFContentParser {
     caseNumber: [
       // Exact "Case Number" labels
       /Case\s+Number[:\s]+([A-Z0-9]+)/i,
-      /Case\s+no[:\s\.]+([A-Z0-9]+)/i,
+      /Case\s+no[:\s.]+([A-Z0-9]+)/i,
       /Case\s+#[:\s]+([A-Z0-9]+)/i,
       
       // UK Family Court case number patterns - ENHANCED FOR STATEMENTS (FIXED: removed /g flag)

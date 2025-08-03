@@ -148,4 +148,5 @@ class VaultService {
   }
 }
 
-export default new VaultService();
+const vaultService = new VaultService();
+export default vaultService;

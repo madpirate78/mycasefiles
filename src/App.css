@@ -619,6 +619,22 @@ body {
   font-size: 14px;
 }
 
+/* Link Style Button */
+button.link-style {
+  background: none;
+  border: none;
+  color: #357ABD;
+  text-decoration: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
+
+button.link-style:hover {
+  text-decoration: underline;
+}
+
 /* Document Vault Styles */
 .document-vault {
   background-color: var(--white);

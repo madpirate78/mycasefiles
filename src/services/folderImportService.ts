@@ -207,4 +207,5 @@ class FolderImportService {
   }
 }
 
-export default new FolderImportService();
+const folderImportService = new FolderImportService();
+export default folderImportService;

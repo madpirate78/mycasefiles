@@ -299,7 +299,7 @@ function App() {
     if (!isInitialized) {
       initializeApp();
     }
-  }, [isElectron, isInitialized]);
+  }, [isElectron, isInitialized, currentVault]);
 
   // Fetch files when vault changes after initialization
   useEffect(() => {

@@ -102,25 +102,25 @@ const generatePageThumbnail = async (file: File, pageNumber: number): Promise<st
  * Extract text content from a specific page for blank detection
  * Using existing Electron PDF parsing - page-specific extraction not yet implemented
  */
-const extractPageText = async (arrayBuffer: ArrayBuffer, pageNumber: number): Promise<string> => {
-  // TODO: Extend Electron PDF parsing to support page-specific text extraction
-  // Current pdf-parse extracts all text at once
-  // For now, return empty string to avoid false blank detection
-  return '';
-};
+// const extractPageText = async (arrayBuffer: ArrayBuffer, pageNumber: number): Promise<string> => {
+//   // TODO: Extend Electron PDF parsing to support page-specific text extraction
+//   // Current pdf-parse extracts all text at once
+//   // For now, return empty string to avoid false blank detection
+//   return '';
+// };
 
 /**
  * Detect if a page is likely blank based on text content
  * NOTE: This is for visual indication only - NO automatic deselection
  */
-const detectBlankPage = (textContent: string): boolean => {
-  // Very conservative detection - only flag obviously empty pages
-  const cleanedContent = textContent.trim();
-  
-  // Only consider truly empty pages as blank (less than 5 characters)
-  // This avoids false positives with scanned documents, images, or minimal text
-  return cleanedContent.length < 5;
-};
+// const detectBlankPage = (textContent: string): boolean => {
+//   // Very conservative detection - only flag obviously empty pages
+//   const cleanedContent = textContent.trim();
+//   
+//   // Only consider truly empty pages as blank (less than 5 characters)
+//   // This avoids false positives with scanned documents, images, or minimal text
+//   return cleanedContent.length < 5;
+// };
 
 /**
  * Create an enhanced placeholder thumbnail with document info
