@@ -1,6 +1,8 @@
 {
   "name": "mycasefiles",
   "version": "0.1.0",
+  "description": "Desktop legal document management system for self-represented litigants",
+  "author": "MyCaseFiles",
   "private": true,
   "homepage": "./",
   "dependencies": {
@@ -26,7 +28,11 @@
     "electron-dev": "ELECTRON_IS_DEV=true electron public/electron.js",
     "dev-electron": "npm run build && npm run electron",
     "build-electron": "npm run build && electron-builder",
-    "dist": "npm run build && electron-builder --publish=never"
+    "dist": "npm run build && electron-builder --win --publish=never",
+    "dist-publish": "npm run build && electron-builder --publish=always",
+    "version-patch": "npm version patch && git push origin master --tags",
+    "version-minor": "npm version minor && git push origin master --tags",
+    "version-major": "npm version major && git push origin master --tags"
   },
   "eslintConfig": {
     "extends": [
@@ -60,19 +66,41 @@
     "appId": "com.mycasefiles.app",
     "productName": "My Case Files",
     "directories": {
+      "buildResources": "build",
       "output": "dist"
     },
     "files": [
       "build/**/*",
       "public/electron.js",
       "public/preload.js",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "!node_modules/.cache/**/*",
+      "!node_modules/fsevents/**/*"
     ],
-    "mac": {
-      "category": "public.app-category.productivity"
+    "publish": {
+      "provider": "github",
+      "private": true,
+      "releaseType": "release"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "icon": "public/logo512.png",
+      "legalTrademarks": "MyCaseFiles"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "My Case Files"
+    },
+    "mac": {
+      "category": "public.app-category.productivity"
     },
     "linux": {
       "target": "AppImage"

@@ -59,6 +59,18 @@ A comprehensive legal case management desktop application designed for self-repr
 - **Progressive Disclosure**: Complexity revealed only when needed
 - **Visual Feedback**: Clear status indicators and interactive elements
 
+## 💾 Installation
+
+### For End Users
+**Windows Installation Packages** are available via GitHub Releases:
+1. Go to the [Releases](../../releases) section
+2. Download the latest `My Case Files Setup X.X.X.exe` 
+3. Run the installer and follow the setup wizard
+4. Launch "My Case Files" from your desktop or start menu
+
+### GitHub Releases Setup (For Developers)
+See **[GitHub Releases Setup Guide](docs/GITHUB_RELEASES_SETUP.md)** for complete instructions on setting up automated Windows installer builds and distribution.
+
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -130,6 +142,11 @@ Opens [http://localhost:3000](http://localhost:3000) for UI development only. **
 
 **Utilities:**
 - **`npm test`** - Run test suite
+
+**Release Management:**
+- **`npm run version-patch`** - Create patch release (0.1.0 → 0.1.1) and trigger GitHub build
+- **`npm run version-minor`** - Create minor release (0.1.0 → 0.2.0) and trigger GitHub build  
+- **`npm run version-major`** - Create major release (0.1.0 → 1.0.0) and trigger GitHub build
 
 ## 🏗️ Project Structure
 
