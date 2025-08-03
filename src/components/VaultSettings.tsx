@@ -19,10 +19,6 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedSettings, setEditedSettings] = useState(settings);
 
-  useEffect(() => {
-    loadSettings();
-  }, [vaultType, loadSettings]);
-
   const loadSettings = useCallback(async () => {
     try {
       const vaultSettings = await vaultService.getVaultSettings(vaultType);
@@ -32,6 +28,10 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
       console.error('Error loading vault settings:', error);
     }
   }, [vaultType]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [vaultType, loadSettings]);
 
   const handleSave = async () => {
     try {
