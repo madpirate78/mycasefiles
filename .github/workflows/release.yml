@@ -27,6 +27,24 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+    
+    - name: Cache React build
+      uses: actions/cache@v4
+      with:
+        path: build
+        key: ${{ runner.os }}-build-${{ hashFiles('src/**/*', 'public/**/*', 'package*.json') }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+    
+    - name: Cache Electron Builder
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cache/electron
+          ~/.cache/electron-builder
+        key: ${{ runner.os }}-electron-${{ hashFiles('package*.json') }}
+        restore-keys: |
+          ${{ runner.os }}-electron-
         
     - name: Install dependencies
       run: npm ci
