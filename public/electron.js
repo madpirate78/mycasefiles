@@ -400,6 +400,7 @@ function calculatePageNumbers(bundleData) {
 // Helper function to create professional court bundle index
 async function createBundleIndex(pdfDoc, bundleData) {
   const indexPages = [];
+  const pageReferences = new Map(); // Track page references for linking
   
   // Load fonts
   const helveticaBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -530,20 +531,39 @@ async function createBundleIndex(pdfDoc, bundleData) {
     }
   };
   
-  // Define starting page for documents
-  let docStartPage = 3; // After cover page and index page
+  // Use actual page numbers from bundle data
+  const frontPageCount = 2; // Cover page + index page(s)
   
   for (const section of bundleData.sections) {
     if (!section.documentCount) continue;
     
+    // Calculate actual section page (section start page + front pages)
+    const sectionPageRef = section.startPage + frontPageCount;
+    pageReferences.set(`section_${section.id}`, sectionPageRef);
+    
     // Section header (e.g., "A. Chronology")
     yPosition -= 5;
     const sectionLabel = `${section.letter}. ${section.label}`;
+    
+    // Create hyperlink annotation for section
+    const labelWidth = helveticaBold.widthOfTextAtSize(sectionLabel, 12);
+    const sectionLinkAnnotation = pdfDoc.context.register(
+      pdfDoc.context.obj({
+        Type: 'Annot',
+        Subtype: 'Link',
+        Rect: [margin, yPosition - 2, margin + labelWidth, yPosition + 12],
+        Border: [0, 0, 0],
+        Dest: [sectionPageRef - 1, 'XYZ', null, null, null], // 0-indexed page reference
+        H: 'I', // Highlight mode
+      })
+    );
+    
+    indexPage.node.addAnnot(sectionLinkAnnotation);
+    
     drawLeftText(sectionLabel, helveticaBold, 12, yPosition, margin, indexPage);
     
     // Draw dotted line from section label to page number
-    const labelWidth = helveticaBold.widthOfTextAtSize(sectionLabel, 12);
-    const pageNumStr = docStartPage.toString();
+    const pageNumStr = sectionPageRef.toString();
     const pageNumWidth = helvetica.widthOfTextAtSize(pageNumStr, 12);
     const pageNumX = width - margin - pageNumWidth;
     
@@ -569,6 +589,10 @@ async function createBundleIndex(pdfDoc, bundleData) {
         yPosition -= 30;
       }
       
+      // Store document page reference using actual bundle pagination
+      const docPageRef = doc.bundleStartPage + frontPageCount;
+      pageReferences.set(`doc_${doc.id}`, docPageRef);
+      
       // Document entry with subsection numbering (e.g., "B.1 Enforcement Application dated 23 April 2025")
       const docLabel = `${section.letter}.${docIndex} ${doc.name}`;
       const indentX = margin + 20; // Indent sub-items
@@ -584,11 +608,25 @@ async function createBundleIndex(pdfDoc, bundleData) {
         displayLabel += '...';
       }
       
+      // Create hyperlink annotation for document
+      const docLabelWidth = helvetica.widthOfTextAtSize(displayLabel, 11);
+      const docLinkAnnotation = pdfDoc.context.register(
+        pdfDoc.context.obj({
+          Type: 'Annot',
+          Subtype: 'Link',
+          Rect: [indentX, yPosition - 2, indentX + docLabelWidth, yPosition + 11],
+          Border: [0, 0, 0],
+          Dest: [docPageRef - 1, 'XYZ', null, null, null], // 0-indexed page reference
+          H: 'I', // Highlight mode
+        })
+      );
+      
+      indexPage.node.addAnnot(docLinkAnnotation);
+      
       drawLeftText(displayLabel, helvetica, 11, yPosition, indentX, indexPage);
       
       // Page number with dotted line
-      const docLabelWidth = helvetica.widthOfTextAtSize(displayLabel, 11);
-      const docPageStr = docStartPage.toString();
+      const docPageStr = docPageRef.toString();
       const docPageWidth = helvetica.widthOfTextAtSize(docPageStr, 11);
       const docPageX = width - margin - docPageWidth;
       
@@ -596,7 +634,6 @@ async function createBundleIndex(pdfDoc, bundleData) {
       drawLeftText(docPageStr, helvetica, 11, yPosition, docPageX, indexPage);
       
       yPosition -= 18;
-      docStartPage++; // Increment page number for next document
       docIndex++;
     }
     
@@ -619,8 +656,11 @@ async function createBundleIndex(pdfDoc, bundleData) {
     pageNum++;
   }
   
-  // Return both cover page and index pages
-  return [coverPage, ...indexPages];
+  // Return both cover page, index pages, and page references for bookmarks
+  return {
+    pages: [coverPage, ...indexPages],
+    pageReferences: pageReferences
+  };
 }
 
 // IPC handler for PDF bundle creation
@@ -653,7 +693,9 @@ ipcMain.handle('create-pdf-bundle', async (event, bundleData) => {
     });
     
     // Create professional court bundle cover page and index
-    const frontPages = await createBundleIndex(bundlePdf, bundleData);
+    const indexResult = await createBundleIndex(bundlePdf, bundleData);
+    const frontPages = indexResult.pages;
+    const pageReferences = indexResult.pageReferences;
     let currentPageNumber = frontPages.length + 1; // Start document pages after front matter
     
     event.sender.send('bundle-progress', { 
@@ -807,8 +849,105 @@ ipcMain.handle('create-pdf-bundle', async (event, bundleData) => {
     event.sender.send('bundle-progress', { 
       stage: 'finalizing', 
       progress: 90, 
-      message: 'Finalizing bundle...' 
+      message: 'Creating bookmarks and finalizing bundle...' 
     });
+    
+    // Create PDF bookmarks/outline
+    console.log('📑 Creating PDF bookmarks...');
+    
+    // Get pages for bookmark creation
+    const pages = bundlePdf.getPages();
+    
+    // Create root outline
+    const outlineRef = bundlePdf.context.nextRef();
+    const outlineDict = bundlePdf.context.obj({
+      Type: 'Outlines',
+      Count: 0,
+    });
+    bundlePdf.context.assign(outlineRef, outlineDict);
+    
+    // Set the outline in the catalog
+    bundlePdf.catalog.set(bundlePdf.context.obj('Outlines'), outlineRef);
+    
+    let bookmarkCount = 0;
+    let prevBookmarkRef = null;
+    let firstBookmarkRef = null;
+    
+    // Create bookmarks for each section
+    for (const section of bundleData.sections) {
+      if (!section.documentCount) continue;
+      
+      const sectionPageRef = pageReferences.get(`section_${section.id}`);
+      if (!sectionPageRef) continue;
+      
+      // Create section bookmark
+      const sectionBookmarkRef = bundlePdf.context.nextRef();
+      const sectionBookmarkDict = bundlePdf.context.obj({
+        Title: bundlePdf.context.obj(`Section ${section.letter}: ${section.label}`),
+        Dest: bundlePdf.context.obj([pages[sectionPageRef - 1].ref, 'XYZ', null, null, null]),
+        Parent: outlineRef,
+      });
+      
+      if (prevBookmarkRef) {
+        sectionBookmarkDict.set(bundlePdf.context.obj('Prev'), prevBookmarkRef);
+        const prevDict = bundlePdf.context.lookup(prevBookmarkRef);
+        prevDict.set(bundlePdf.context.obj('Next'), sectionBookmarkRef);
+      } else {
+        firstBookmarkRef = sectionBookmarkRef;
+      }
+      
+      bundlePdf.context.assign(sectionBookmarkRef, sectionBookmarkDict);
+      prevBookmarkRef = sectionBookmarkRef;
+      bookmarkCount++;
+      
+      // Create bookmarks for documents in this section
+      const sectionDocs = bundleData.documents.filter(doc => doc.section === section.id);
+      let docIndex = 1;
+      let prevDocBookmarkRef = null;
+      let firstDocBookmarkRef = null;
+      let docBookmarkCount = 0;
+      
+      for (const doc of sectionDocs) {
+        const docPageRef = pageReferences.get(`doc_${doc.id}`);
+        if (!docPageRef) continue;
+        
+        const docBookmarkRef = bundlePdf.context.nextRef();
+        const docBookmarkDict = bundlePdf.context.obj({
+          Title: bundlePdf.context.obj(`${section.letter}.${docIndex} ${doc.name}`),
+          Dest: bundlePdf.context.obj([pages[docPageRef - 1].ref, 'XYZ', null, null, null]),
+          Parent: sectionBookmarkRef,
+        });
+        
+        if (prevDocBookmarkRef) {
+          docBookmarkDict.set(bundlePdf.context.obj('Prev'), prevDocBookmarkRef);
+          const prevDocDict = bundlePdf.context.lookup(prevDocBookmarkRef);
+          prevDocDict.set(bundlePdf.context.obj('Next'), docBookmarkRef);
+        } else {
+          firstDocBookmarkRef = docBookmarkRef;
+        }
+        
+        bundlePdf.context.assign(docBookmarkRef, docBookmarkDict);
+        prevDocBookmarkRef = docBookmarkRef;
+        docIndex++;
+        docBookmarkCount++;
+      }
+      
+      // Update section bookmark with children
+      if (firstDocBookmarkRef) {
+        sectionBookmarkDict.set(bundlePdf.context.obj('First'), firstDocBookmarkRef);
+        sectionBookmarkDict.set(bundlePdf.context.obj('Last'), prevDocBookmarkRef);
+        sectionBookmarkDict.set(bundlePdf.context.obj('Count'), bundlePdf.context.obj(docBookmarkCount));
+      }
+    }
+    
+    // Update root outline
+    if (firstBookmarkRef) {
+      outlineDict.set(bundlePdf.context.obj('First'), firstBookmarkRef);
+      outlineDict.set(bundlePdf.context.obj('Last'), prevBookmarkRef);
+      outlineDict.set(bundlePdf.context.obj('Count'), bundlePdf.context.obj(bookmarkCount));
+    }
+    
+    console.log(`✅ Created ${bookmarkCount} section bookmarks with document sub-bookmarks`);
     
     // Serialize PDF to bytes
     const pdfBytes = await bundlePdf.save();
