@@ -73,7 +73,8 @@ A comprehensive legal case management desktop application designed for self-repr
 3. **Launch**: Use desktop shortcut or start menu
 
 #### For Developers:
-- **Automated Builds**: GitHub Actions creates Windows installers on version tags
+- **Automated Releases**: GitHub Actions creates Windows installers on version tags only
+- **Manual Test Builds**: On-demand builds via GitHub Actions (no automatic triggers)
 - **Release Management**: `npm run version-patch` creates releases automatically
 - **Distribution**: Private repository supports controlled access
 - **Setup Guide**: See [GitHub Releases Setup Guide](docs/GITHUB_RELEASES_SETUP.md)
@@ -120,6 +121,7 @@ npm run electron-dev  # Terminal 2
 - **npm** package manager
 - **Desktop OS**: Windows, macOS, or Linux
 - **Electron runtime** (auto-installed via npm)
+- **GitHub CLI** (optional, for CLI build triggers): [Download here](https://cli.github.com/)
 
 ### Development Workflow
 
@@ -141,6 +143,21 @@ npm run electron-dev
 ```
 
 ⚠️ **Critical**: All core functionality requires Electron runtime - never attempt browser-only development.
+
+#### GitHub CLI Setup (Optional - for CLI build triggers)
+```bash
+# Install GitHub CLI
+winget install GitHub.cli  # Windows
+brew install gh            # macOS  
+# Or download: https://cli.github.com/
+
+# Authenticate (one-time setup)
+gh auth login
+
+# Test CLI build triggers
+npm run build-menu         # Interactive menu
+npm run trigger-build      # Direct build trigger
+```
 
 ### System Setup (Linux/WSL)
 If Electron fails to launch, install required system libraries:
@@ -183,17 +200,38 @@ Opens [http://localhost:3000](http://localhost:3000) for UI development only. **
 - **`npm run version-minor`** - 🚀 **Create release** (0.1.0 → 0.2.0) + trigger automated build
 - **`npm run version-major`** - 🚀 **Create release** (0.1.0 → 1.0.0) + trigger automated build
 
+#### CLI Build Triggers (GitHub Actions)
+- **`npm run trigger-build`** - 🔨 **Trigger test build** from command line
+- **`npm run trigger-release-build`** - 📦 **Trigger release build** from command line
+- **`npm run build-status`** - 📊 **Check recent build status**
+- **`npm run watch-build`** - 👀 **Watch current build progress**
+- **`npm run build-menu`** - 🎯 **Interactive build menu** with all options
+
 #### Deployment Workflow
 ```bash
 # 1. Development and testing
 npm run dev-electron
 
-# 2. Create production release
-npm run version-patch  # Auto-triggers GitHub Actions build
+# 2. Optional: Test build (choose method)
+npm run trigger-build           # CLI trigger
+npm run build-menu              # Interactive menu
+# OR: Go to GitHub → Actions → Build Test → Run workflow
 
-# 3. Download installer from GitHub Releases
-# 4. Distribute to end users
+# 3. Monitor build progress
+npm run build-status            # Check status
+npm run watch-build             # Watch live progress
+
+# 4. Create production release (when ready)
+npm run version-patch           # Auto-triggers release build
+
+# 5. Download installer from GitHub Releases → distribute
 ```
+
+#### Build Strategy (Efficient)
+- **Development pushes**: No automatic builds (save GitHub Actions minutes)
+- **Test builds**: Manual trigger when needed via GitHub Actions UI
+- **Release builds**: Automatic on version tags (`npm run version-*`)
+- **Pull requests**: Automatic builds for code review safety
 
 ## 🏗️ Project Structure
 

@@ -17,9 +17,9 @@ This guide provides step-by-step instructions for setting up GitHub releases to 
 - Version management scripts (`npm run version-patch`, etc.)
 - Build scripts optimized for Windows target
 
-### ✅ GitHub Actions Workflows
-- **Release Workflow** (`.github/workflows/release.yml`): Builds and publishes on tag push
-- **Build Test Workflow** (`.github/workflows/build-test.yml`): Tests builds on commits without publishing
+### ✅ GitHub Actions Workflows (Efficient Strategy)
+- **Release Workflow** (`.github/workflows/release.yml`): Builds and publishes on tag push only
+- **Build Test Workflow** (`.github/workflows/build-test.yml`): Manual trigger + PR testing (no automatic builds on commits)
 
 ### ✅ Build Configuration
 - Windows x64 target with NSIS installer
@@ -100,6 +100,37 @@ Users installing your app will get:
 - For production, consider purchasing code signing certificate
 - Users can still install by clicking "More info" → "Run anyway"
 
+### Manual Testing
+```bash
+# Build without publishing
+npm run dist
+
+# Build and publish to GitHub
+npm run dist-publish
+```
+
+## 🎯 Efficient Build Strategy
+
+### When Builds Trigger
+- ✅ **Version tags**: Automatic release builds (`npm run version-patch`)
+- ✅ **Manual trigger**: Go to Actions → Build Test → Run workflow  
+- ✅ **Pull requests**: Automatic builds for code review
+- ❌ **Regular commits**: No automatic builds (saves GitHub Actions minutes)
+
+### Development Workflow
+```bash
+# Daily development - no builds triggered
+git add .
+git commit -m "Feature updates"
+git push origin master  # ← No build triggered
+
+# When you want to test a build
+# Go to GitHub → Actions → Build Test → Run workflow
+
+# When ready for release
+npm run version-patch  # ← Triggers release build automatically
+```
+
 ## 🛠️ Troubleshooting
 
 ### Build Fails
@@ -113,6 +144,11 @@ Users installing your app will get:
 1. Verify tag was pushed: `git tag -l`
 2. Check workflow was triggered in **Actions** tab
 3. Ensure `GITHUB_TOKEN` has proper permissions
+
+### No Test Builds Triggering
+- **Expected behavior**: Test builds are manual-only to save GitHub Actions minutes
+- **To trigger**: Go to Actions → Build Test → Run workflow
+- **Alternative**: Create a pull request (auto-triggers build)
 
 ### Local Build Issues (WSL/Linux)
 - Windows builds require Wine on Linux/WSL
