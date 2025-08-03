@@ -4,14 +4,13 @@ import './App.css';
 import Dashboard from './components/Dashboard';
 import DocumentVault from './components/DocumentVault';
 import BundleList from './components/BundleList';
-import EmailManager from './components/EmailManager';
 import VaultSelector from './components/VaultSelector';
 import VaultSettings from './components/VaultSettings';
 import FolderImportWizard from './components/FolderImportWizard';
 import { FileWithOCR } from './components/FilePreviewModal';
 import { VaultType } from './types/vault';
 
-type View = 'home' | 'bundles' | 'documents' | 'emails' | 'import' | 'settings';
+type View = 'home' | 'bundles' | 'documents' | 'import' | 'settings';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('home');
@@ -316,8 +315,6 @@ function App() {
         return <BundleList uploadedFiles={uploadedFiles} />;
       case 'documents':
         return <DocumentVault uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileDelete={handleFileDelete} onFileEdit={handleFileUpdate} onFileUpdate={handlePageSelectionUpdate} currentVault={currentVault} />;
-      case 'emails':
-        return <EmailManager onFileUpload={handleFileUpload} />;
       case 'import':
         return <FolderImportWizard currentVault={currentVault} onImport={handleFolderImport} />;
       case 'settings':
@@ -404,13 +401,6 @@ function App() {
             <span className="nav-label">Documents</span>
           </button>
           <button 
-            className={`nav-btn ${currentView === 'emails' ? 'active' : ''}`}
-            onClick={() => setCurrentView('emails')}
-          >
-            <span className="nav-icon">✉️</span>
-            <span className="nav-label">Emails</span>
-          </button>
-          <button 
             className={`nav-btn ${currentView === 'import' ? 'active' : ''}`}
             onClick={() => setCurrentView('import')}
           >
@@ -422,7 +412,7 @@ function App() {
             onClick={() => setCurrentView('settings')}
           >
             <span className="nav-icon">⚙️</span>
-            <span className="nav-label">Settings</span>
+            <span className="nav-label">Case Settings</span>
           </button>
         </nav>
 

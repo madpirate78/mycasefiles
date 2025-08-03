@@ -236,6 +236,7 @@ const CaseManager: React.FC<CaseManagerProps> = ({ onCaseSelect, currentCaseId }
                 value={newCaseData.dateOfApplication}
                 onChange={e => setNewCaseData({...newCaseData, dateOfApplication: e.target.value})}
                 required
+                lang="en-GB"
               />
             </div>
 
@@ -322,6 +323,7 @@ const CaseManager: React.FC<CaseManagerProps> = ({ onCaseSelect, currentCaseId }
                 type="date"
                 value={editingCase.dateOfApplication ? new Date(editingCase.dateOfApplication).toISOString().split('T')[0] : ''}
                 onChange={e => setEditingCase({...editingCase, dateOfApplication: e.target.value ? new Date(e.target.value) : undefined})}
+                lang="en-GB"
               />
             </div>
 

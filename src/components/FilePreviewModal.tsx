@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { StoredFile } from '../services/indexedDBService';
 import ElectronPDFRenderer from './ElectronPDFRenderer';
 import { getSuggestedMetadata, extractFromPDF, detectVaultType } from '../services/documentParser';
@@ -10,6 +10,7 @@ interface FilePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (fileId: number, metadata: FileWithOCR) => void;
+  onDelete?: (fileId: number) => void;
   vaultType?: VaultType;
 }
 
@@ -92,12 +93,38 @@ const toSafeString = (value: any): string => {
   return String(value);
 };
 
-const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose, onSave, vaultType = 'child' }) => {
+const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClose, onSave, onDelete, vaultType = 'child' }) => {
+  // Create stable reference to file data for PDF renderer
+  const stableFileData = useMemo(() => {
+    console.log('🔄 useMemo recalculating stableFileData');
+    return file?.data;
+  }, [file?.data]);
+
+  // Debug when the file object changes
+  useEffect(() => {
+    console.log('📁 File object changed:', {
+      fileName: file?.name,
+      hasData: !!file?.data,
+      fileId: file?.id,
+      fileReference: file
+    });
+  }, [file]);
+
   const [metadata, setMetadata] = useState<FileWithOCR>({
     name: file?.name || '',
     section: 'other',
     description: ''
   });
+
+
+  // Stable PDF callback functions
+  const handlePDFLoad = useCallback(() => {
+    console.log('PDF loaded successfully');
+  }, []);
+
+  const handlePDFError = useCallback((error: string) => {
+    console.error('PDF error:', error);
+  }, []);
   // const [pdfText, setPdfText] = useState<string>('');
   const [ocrStatus, setOcrStatus] = useState<{
     isScanned: boolean;
@@ -111,6 +138,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     hasRun: false,
     textLength: 0
   });
+
+  // Vault change confirmation dialog state
+  const [showVaultChangeConfirm, setShowVaultChangeConfirm] = useState(false);
+  const [pendingVaultChange, setPendingVaultChange] = useState<VaultType | null>(null);
 
   // Load existing metadata when file changes (not vault type)
   useEffect(() => {
@@ -455,7 +486,6 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         { key: 'date', label: 'Date', type: 'date', required: true },
         { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., HHJ Smith',
           showIf: (meta) => meta.orderType !== 'application' },
-        { key: 'details', label: 'Details', type: 'textarea', placeholder: 'Additional details about this document' }
       ],
       displayNameFormat: (meta) => {
         const parts = [toSafeString(meta.orderType) || 'court'];
@@ -593,8 +623,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
             { key: 'date', label: 'Date', type: 'date', required: true },
             { key: 'judgeName', label: 'Judge Name', type: 'text', placeholder: 'e.g., DJ Smith',
               showIf: (meta) => meta.orderType !== 'application' },
-            { key: 'details', label: 'Details', type: 'textarea', placeholder: 'Additional details about this document' }
-          ],
+              ],
           displayNameFormat: (meta) => {
             const parts = [toSafeString(meta.orderType) || 'court'];
             if (meta.courtReference) parts.push(toSafeString(meta.courtReference).replace(/\s+/g, '_'));
@@ -710,6 +739,45 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
   const sections = vaultService.getVaultSections(vaultType);
   const currentSectionConfig = sectionConfigs.find(config => config.id === metadata.section);
 
+  // Vault change handlers
+  const handleVaultChangeRequest = (newVaultType: VaultType) => {
+    setPendingVaultChange(newVaultType);
+    setShowVaultChangeConfirm(true);
+  };
+
+  const handleVaultChangeConfirm = async () => {
+    if (!file || !pendingVaultChange || !file.id) return;
+    
+    try {
+      // Move file to the new vault
+      await vaultService.moveFileToVault(file.id, pendingVaultChange);
+      
+      // Close confirmation dialog
+      setShowVaultChangeConfirm(false);
+      setPendingVaultChange(null);
+      
+      // Close the metadata modal to refresh the main view
+      onClose();
+    } catch (error) {
+      console.error('Failed to change vault:', error);
+      alert('Failed to change vault. Please try again.');
+    }
+  };
+
+  const handleVaultChangeCancel = () => {
+    setShowVaultChangeConfirm(false);
+    setPendingVaultChange(null);
+  };
+
+  const handleDelete = () => {
+    if (!file || !file.id) return;
+    
+    if (window.confirm(`Are you sure you want to delete "${file.name}"?\n\nThis action cannot be undone.`)) {
+      onDelete?.(file.id);
+      onClose(); // Close the modal after deletion
+    }
+  };
+
   const handleSave = () => {
     if (!file) return;
     
@@ -815,48 +883,52 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           />
         );
       case 'date':
-        // Convert ISO date to UK format for display
-        const formatValueForDisplay = (isoValue: string) => {
-          if (!isoValue) return '';
-          const date = new Date(isoValue);
-          if (isNaN(date.getTime())) return isoValue;
-          const day = date.getDate().toString().padStart(2, '0');
-          const month = (date.getMonth() + 1).toString().padStart(2, '0');
-          const year = date.getFullYear();
-          return `${day}/${month}/${year}`;
-        };
-
-        // Convert UK format to ISO for HTML input
-        const parseUKToISO = (ukValue: string) => {
-          if (!ukValue || ukValue.length < 8) return '';
-          const parts = ukValue.split('/');
-          if (parts.length !== 3) return ukValue;
-          const day = parts[0].padStart(2, '0');
-          const month = parts[1].padStart(2, '0');
-          const year = parts[2];
-          if (year.length === 4 && month.length <= 2 && day.length <= 2) {
-            return `${year}-${month}-${day}`;
+        // Convert between UK format (DD/MM/YYYY) for storage and ISO format (YYYY-MM-DD) for HTML input
+        const ukToIso = (ukDate: string) => {
+          if (!ukDate) return '';
+          // If already ISO format, return as-is
+          if (ukDate.match(/^\d{4}-\d{2}-\d{2}$/)) return ukDate;
+          // Parse UK format DD/MM/YYYY
+          const parts = ukDate.split('/');
+          if (parts.length === 3) {
+            const day = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            const year = parts[2];
+            if (year.length === 4) {
+              return `${year}-${month}-${day}`;
+            }
           }
-          return ukValue;
+          return ukDate;
         };
-
+        
+        const isoToUk = (isoDate: string) => {
+          if (!isoDate) return '';
+          // If already UK format, return as-is
+          if (isoDate.includes('/')) return isoDate;
+          // Parse ISO format YYYY-MM-DD
+          const parts = isoDate.split('-');
+          if (parts.length === 3) {
+            const year = parts[0];
+            const month = parts[1];
+            const day = parts[2];
+            return `${day}/${month}/${year}`;
+          }
+          return isoDate;
+        };
+        
         return (
-          <div className="uk-date-input">
-            <input
-              type="text"
-              value={value ? formatValueForDisplay(value) : ''}
-              onChange={(e) => {
-                const ukFormat = e.target.value;
-                const isoFormat = parseUKToISO(ukFormat);
-                updateMetadata(field.key, isoFormat);
-              }}
-              placeholder="DD/MM/YYYY"
-              className="form-input"
-              required={field.required}
-              pattern="[0-9]{2}/[0-9]{2}/[0-9]{4}"
-              title="Enter date in DD/MM/YYYY format"
-            />
-          </div>
+          <input
+            type="date"
+            value={ukToIso(value)} // Convert UK to ISO for input
+            onChange={(e) => {
+              const isoValue = e.target.value; // HTML input gives ISO format
+              const ukValue = isoToUk(isoValue); // Convert to UK format for storage
+              updateMetadata(field.key, ukValue);
+            }}
+            className="form-input"
+            required={field.required}
+            lang="en-GB" // Force UK locale for DD/MM/YYYY display
+          />
         );
       default: // text
         return (
@@ -884,11 +956,11 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         <div className="modal-body">
           <div className="preview-section">
             <div className="pdf-preview">
-              {file.type.includes('pdf') ? (
+              {file.type.includes('pdf') && stableFileData ? (
                 <ElectronPDFRenderer 
-                  file={file.data}
-                  onLoad={() => console.log('PDF loaded successfully')}
-                  onError={(error) => console.error('PDF error:', error)}
+                  file={stableFileData}
+                  onLoad={handlePDFLoad}
+                  onError={handlePDFError}
                   showNavigation={false}
                 />
               ) : (
@@ -911,7 +983,37 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
                   <span className="vault-icon">{vaultType === 'child' ? '👨‍👩‍👧‍👦' : '💰'}</span>
                   {vaultType === 'child' ? 'Child Matters' : 'Financial Matters'}
                 </span>
-                <small className="vault-note">Use the main vault selector to change vault type</small>
+                <div className="vault-change-buttons">
+                  {vaultType === 'child' ? (
+                    <button 
+                      type="button"
+                      onClick={() => handleVaultChangeRequest('finance')}
+                      className="btn secondary small"
+                      title="Move to Financial Matters vault"
+                    >
+                      💰 Move to Financial
+                    </button>
+                  ) : (
+                    <button 
+                      type="button"
+                      onClick={() => handleVaultChangeRequest('child')}
+                      className="btn secondary small"
+                      title="Move to Child Matters vault"
+                    >
+                      👨‍👩‍👧‍👦 Move to Child
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button 
+                      type="button"
+                      onClick={handleDelete}
+                      className="btn danger small"
+                      title="Delete this document"
+                    >
+                      🗑️ Delete
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -951,50 +1053,60 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
               );
             })}
 
-            {/* OCR Status and Control */}
-            {ocrStatus.isScanned && (
-              <div className="form-group">
-                <label>Document Scanning</label>
-                <div className="ocr-status-container">
-                  {!ocrStatus.hasRun && !ocrStatus.isProcessing && (
-                    <div className="ocr-prompt">
-                      <p className="ocr-detected">📄 Scanned document detected ({ocrStatus.textLength} chars extracted)</p>
-                      <button 
-                        type="button"
-                        className="btn secondary"
-                        onClick={runOCR}
-                        style={{ marginTop: '8px' }}
-                      >
-                        🔍 Run OCR to Extract Full Text
-                      </button>
-                      <p className="ocr-note">OCR will analyze the scanned image to extract readable text. This may take 10-15 seconds.</p>
-                    </div>
-                  )}
-                  
-                  {ocrStatus.isProcessing && (
-                    <div className="ocr-processing">
-                      <p className="ocr-status">🔄 Running OCR analysis...</p>
-                      <div className="ocr-spinner">Processing scanned document, please wait...</div>
-                    </div>
-                  )}
-                  
-                  {ocrStatus.hasRun && !ocrStatus.isProcessing && (
-                    <div className="ocr-complete">
-                      <p className="ocr-success">
-                        ✅ OCR completed: {ocrStatus.textLength} characters extracted
-                        {ocrStatus.confidence && ` (${ocrStatus.confidence.toFixed(1)}% confidence)`}
-                        {metadata.ocrDate && (
-                          <span className="ocr-date">
-                            <br />
-                            <small>Performed on {new Date(metadata.ocrDate).toLocaleDateString('en-GB')}</small>
-                          </span>
-                        )}
-                      </p>
-                    </div>
-                  )}
-                </div>
+            {/* Document Processing Status */}
+            <div className="form-group">
+              <label>Document Processing</label>
+              <div className="processing-status-container">
+                {ocrStatus.isScanned ? (
+                  <div className="ocr-status-container">
+                    {!ocrStatus.hasRun && !ocrStatus.isProcessing && (
+                      <div className="ocr-prompt">
+                        <p className="ocr-detected">📄 Scanned document detected ({ocrStatus.textLength} chars extracted)</p>
+                        <button 
+                          type="button"
+                          className="btn secondary"
+                          onClick={runOCR}
+                          style={{ marginTop: '8px' }}
+                        >
+                          🔍 Run OCR to Extract Full Text
+                        </button>
+                        <p className="ocr-note">OCR will analyze the scanned image to extract readable text. This may take 10-15 seconds.</p>
+                      </div>
+                    )}
+                    
+                    {ocrStatus.isProcessing && (
+                      <div className="ocr-processing">
+                        <p className="ocr-status">🔄 Running OCR analysis...</p>
+                        <div className="ocr-spinner">Processing scanned document, please wait...</div>
+                      </div>
+                    )}
+                    
+                    {ocrStatus.hasRun && !ocrStatus.isProcessing && (
+                      <div className="ocr-complete">
+                        <p className="ocr-success">
+                          ✅ OCR completed: {ocrStatus.textLength} characters extracted
+                          {ocrStatus.confidence && ` (${ocrStatus.confidence.toFixed(1)}% confidence)`}
+                          {metadata.ocrDate && (
+                            <span className="ocr-date">
+                              <br />
+                              <small>Performed on {new Date(metadata.ocrDate).toLocaleDateString('en-GB')}</small>
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-document-status">
+                    <p className="text-document-complete">
+                      ✅ Text PDF processed: {ocrStatus.textLength > 0 ? `${ocrStatus.textLength} characters extracted` : 'Text extracted and analyzed'}
+                      {metadata.autopopulationPerformed && <br />}
+                      {metadata.autopopulationPerformed && <small>Auto-populated from PDF content</small>}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
+            </div>
 
             <div className="form-group">
               <label>Description</label>
@@ -1019,6 +1131,40 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           </div>
         </div>
       </div>
+      
+      {/* Vault Change Confirmation Dialog */}
+      {showVaultChangeConfirm && (
+        <div className="modal-overlay" onClick={handleVaultChangeCancel}>
+          <div className="modal-content small" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Confirm Vault Change</h3>
+              <button className="close-btn" onClick={handleVaultChangeCancel}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>
+                Are you sure you want to move this document from <strong>{vaultType === 'child' ? 'Child Matters' : 'Financial Matters'}</strong> to <strong>{pendingVaultChange === 'child' ? 'Child Matters' : 'Financial Matters'}</strong>?
+              </p>
+              <p className="warning-text">
+                ⚠️ This action will move the document to a different vault. You can move it back if needed.
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button 
+                onClick={handleVaultChangeCancel}
+                className="btn secondary"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleVaultChangeConfirm}
+                className="btn primary"
+              >
+                Yes, Move Document
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -16,7 +16,6 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
     respondentName: vaultType === 'finance' ? '' : undefined,
     children: vaultType === 'child' ? [] : undefined
   });
-  const [isEditing, setIsEditing] = useState(false);
   const [editedSettings, setEditedSettings] = useState(settings);
 
   const loadSettings = useCallback(async () => {
@@ -33,41 +32,35 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
     loadSettings();
   }, [vaultType, loadSettings]);
 
-  const handleSave = async () => {
+
+  // Auto-save on change
+  const handleFieldChange = async (field: string, value: any) => {
+    const newSettings = { ...editedSettings, [field]: value };
+    setEditedSettings(newSettings);
+    
     try {
-      await vaultService.updateVaultSettings(vaultType, editedSettings);
-      setSettings(editedSettings);
-      setIsEditing(false);
+      await vaultService.updateVaultSettings(vaultType, newSettings);
+      setSettings(newSettings);
     } catch (error) {
-      console.error('Error saving vault settings:', error);
-      alert('Failed to save settings');
+      console.error('Error auto-saving settings:', error);
     }
   };
 
-  const handleCancel = () => {
-    setEditedSettings(settings);
-    setIsEditing(false);
-  };
-
-  const addChild = () => {
+  const addChild = async () => {
     if (editedSettings.children) {
-      setEditedSettings({
-        ...editedSettings,
-        children: [...editedSettings.children, { name: '', dateOfBirth: undefined }]
-      });
+      const newChildren = [...editedSettings.children, { name: '', dateOfBirth: undefined }];
+      await handleFieldChange('children', newChildren);
     }
   };
 
-  const removeChild = (index: number) => {
+  const removeChild = async (index: number) => {
     if (editedSettings.children) {
-      setEditedSettings({
-        ...editedSettings,
-        children: editedSettings.children.filter((_, i) => i !== index)
-      });
+      const newChildren = editedSettings.children.filter((_, i) => i !== index);
+      await handleFieldChange('children', newChildren);
     }
   };
 
-  const updateChild = (index: number, field: 'name' | 'dateOfBirth', value: string) => {
+  const updateChild = async (index: number, field: 'name' | 'dateOfBirth', value: string) => {
     if (editedSettings.children) {
       const newChildren = [...editedSettings.children];
       if (field === 'name') {
@@ -75,27 +68,15 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
       } else {
         newChildren[index].dateOfBirth = value ? new Date(value) : undefined;
       }
-      setEditedSettings({
-        ...editedSettings,
-        children: newChildren
-      });
+      await handleFieldChange('children', newChildren);
     }
   };
 
   return (
     <div className="vault-settings">
       <div className="settings-header">
-        <h2>{vaultType === 'child' ? 'Child Matters' : 'Financial Matters'} Settings</h2>
-        {!isEditing ? (
-          <button className="btn-primary" onClick={() => setIsEditing(true)}>
-            Edit Settings
-          </button>
-        ) : (
-          <div className="settings-actions">
-            <button className="btn-secondary" onClick={handleCancel}>Cancel</button>
-            <button className="btn-primary" onClick={handleSave}>Save</button>
-          </div>
-        )}
+        <h2>Case Settings - {vaultType === 'child' ? 'Child Matters' : 'Financial Matters'}</h2>
+        <p className="auto-save-note">Changes are saved automatically</p>
       </div>
 
       <div className="settings-content">
@@ -112,60 +93,44 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
             <>
               <div className="form-group">
                 <label>Father's Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedSettings.fatherName || ''}
-                    onChange={e => setEditedSettings({...editedSettings, fatherName: e.target.value})}
-                    placeholder="Enter father's full name"
-                  />
-                ) : (
-                  <p className="field-value">{settings.fatherName || 'Not set'}</p>
-                )}
+                <input
+                  type="text"
+                  value={editedSettings.fatherName || ''}
+                  onChange={e => handleFieldChange('fatherName', e.target.value)}
+                  placeholder="Enter father's full name"
+                />
               </div>
 
               <div className="form-group">
                 <label>Mother's Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedSettings.motherName || ''}
-                    onChange={e => setEditedSettings({...editedSettings, motherName: e.target.value})}
-                    placeholder="Enter mother's full name"
-                  />
-                ) : (
-                  <p className="field-value">{settings.motherName || 'Not set'}</p>
-                )}
+                <input
+                  type="text"
+                  value={editedSettings.motherName || ''}
+                  onChange={e => handleFieldChange('motherName', e.target.value)}
+                  placeholder="Enter mother's full name"
+                />
               </div>
             </>
           ) : (
             <>
               <div className="form-group">
                 <label>Applicant Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedSettings.applicantName || ''}
-                    onChange={e => setEditedSettings({...editedSettings, applicantName: e.target.value})}
-                    placeholder="Enter applicant's full name"
-                  />
-                ) : (
-                  <p className="field-value">{settings.applicantName || 'Not set'}</p>
-                )}
+                <input
+                  type="text"
+                  value={editedSettings.applicantName || ''}
+                  onChange={e => handleFieldChange('applicantName', e.target.value)}
+                  placeholder="Enter applicant's full name"
+                />
               </div>
 
               <div className="form-group">
                 <label>Respondent Name</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={editedSettings.respondentName || ''}
-                    onChange={e => setEditedSettings({...editedSettings, respondentName: e.target.value})}
-                    placeholder="Enter respondent's full name"
-                  />
-                ) : (
-                  <p className="field-value">{settings.respondentName || 'Not set'}</p>
-                )}
+                <input
+                  type="text"
+                  value={editedSettings.respondentName || ''}
+                  onChange={e => handleFieldChange('respondentName', e.target.value)}
+                  placeholder="Enter respondent's full name"
+                />
               </div>
             </>
           )}
@@ -174,39 +139,26 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
         {vaultType === 'child' && (
           <div className="settings-section">
             <h3>Children</h3>
-            {isEditing ? (
-              <>
-                {editedSettings.children?.map((child, index) => (
-                  <div key={index} className="child-entry">
-                    <input
-                      type="text"
-                      value={child.name}
-                      onChange={e => updateChild(index, 'name', e.target.value)}
-                      placeholder="Child's name"
-                    />
-                    <input
-                      type="date"
-                      value={child.dateOfBirth ? new Date(child.dateOfBirth).toISOString().split('T')[0] : ''}
-                      onChange={e => updateChild(index, 'dateOfBirth', e.target.value)}
-                    />
-                    <button className="btn-danger-small" onClick={() => removeChild(index)}>Remove</button>
-                  </div>
-                ))}
-                <button className="btn-secondary" onClick={addChild}>Add Child</button>
-              </>
-            ) : (
-              <div className="children-list">
-                {settings.children && settings.children.length > 0 ? (
-                  settings.children.map((child, index) => (
-                    <p key={index} className="field-value">
-                      {child.name} {child.dateOfBirth && `(DOB: ${new Date(child.dateOfBirth).toLocaleDateString('en-GB')})`}
-                    </p>
-                  ))
-                ) : (
-                  <p className="field-value">No children added</p>
-                )}
-              </div>
-            )}
+            <div className="children-section">
+              {editedSettings.children?.map((child, index) => (
+                <div key={index} className="child-entry">
+                  <input
+                    type="text"
+                    value={child.name}
+                    onChange={e => updateChild(index, 'name', e.target.value)}
+                    placeholder="Child's name"
+                  />
+                  <input
+                    type="date"
+                    value={child.dateOfBirth ? new Date(child.dateOfBirth).toISOString().split('T')[0] : ''}
+                    onChange={e => updateChild(index, 'dateOfBirth', e.target.value)}
+                    lang="en-GB"
+                  />
+                  <button className="btn-danger-small" onClick={() => removeChild(index)}>Remove</button>
+                </div>
+              ))}
+              <button className="btn-secondary" onClick={addChild}>Add Child</button>
+            </div>
           </div>
         )}
 
@@ -214,16 +166,12 @@ const VaultSettings: React.FC<VaultSettingsProps> = ({ vaultType }) => {
           <h3>Court Information</h3>
           <div className="form-group">
             <label>Primary Court Name</label>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editedSettings.primaryCourtName || ''}
-                onChange={e => setEditedSettings({...editedSettings, primaryCourtName: e.target.value})}
-                placeholder="e.g., Central Family Court"
-              />
-            ) : (
-              <p className="field-value">{settings.primaryCourtName || 'Not set'}</p>
-            )}
+            <input
+              type="text"
+              value={editedSettings.primaryCourtName || ''}
+              onChange={e => handleFieldChange('primaryCourtName', e.target.value)}
+              placeholder="e.g., Central Family Court"
+            />
           </div>
         </div>
       </div>

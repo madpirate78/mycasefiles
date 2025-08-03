@@ -32,6 +32,11 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [pageViewFile, setPageViewFile] = useState<StoredFile | null>(null);
   const [isPagePruneModalOpen, setIsPagePruneModalOpen] = useState(false);
+  
+  // Batch OCR processing state
+  const [showOcrAllDialog, setShowOcrAllDialog] = useState(false);
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, currentFile: '' });
 
   // Get vault-specific sections
   const sections = vaultService.getVaultSections(currentVault);
@@ -90,6 +95,136 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
     setPageViewFile(null);
   };
 
+  // Batch OCR processing functions
+  const handleBatchOcrStart = async () => {
+    setShowOcrAllDialog(false);
+    setIsBatchProcessing(true);
+    
+    const pdfFiles = uploadedFiles.filter(file => file.type.includes('pdf'));
+    setBatchProgress({ current: 0, total: pdfFiles.length, currentFile: '' });
+    
+    console.log(`🚀 Starting batch OCR for ${pdfFiles.length} PDF files`);
+    
+    for (let i = 0; i < pdfFiles.length; i++) {
+      const file = pdfFiles[i];
+      setBatchProgress({ current: i + 1, total: pdfFiles.length, currentFile: file.name });
+      
+      try {
+        console.log(`📄 Processing ${i + 1}/${pdfFiles.length}: ${file.name}`);
+        
+        // Process all files, regardless of previous processing status
+        if (file.data) {
+          const arrayBuffer = await file.data.arrayBuffer();
+          
+          try {
+            // Get filename suggestions first
+            const { getSuggestedMetadata, extractFromPDF } = await import('../services/documentParser');
+            const suggestions = getSuggestedMetadata(file.name, currentVault);
+            
+            let pdfData: any = null;
+            let pdfText = '';
+            let isScanned = false;
+            let ocrPerformed = false;
+            let ocrText = '';
+            let ocrConfidence: number | undefined;
+            
+            // Step 1: Try to extract text via Electron API first
+            if (window.electronAPI && window.electronAPI.parsePDF) {
+              console.log(`🔧 Extracting PDF text via Electron for: ${file.name}`);
+              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+              
+              if (pdfResult.success && pdfResult.text) {
+                pdfText = pdfResult.text;
+                const method = (pdfResult as any).extractionMethod || 'PDF_PARSE';
+                const textLength = pdfResult.text.length;
+                
+                // Check if this is likely a scanned PDF
+                isScanned = (pdfResult as any).isScanned || 
+                           textLength < 50 || 
+                           ((pdfResult as any).info?.Producer && (pdfResult as any).info.Producer.includes('EPSON Scan'));
+                
+                console.log(`📝 Text extracted via ${method}, length: ${textLength}, isScanned: ${isScanned}`);
+                
+                // Step 2: Run OCR if it's a scanned PDF
+                if (isScanned && window.electronAPI.ocrPDF) {
+                  console.log(`🔍 Running OCR on scanned PDF: ${file.name}`);
+                  setBatchProgress({ 
+                    current: i + 1, 
+                    total: pdfFiles.length, 
+                    currentFile: `${file.name} (OCR processing...)` 
+                  });
+                  
+                  const ocrResult = await window.electronAPI.ocrPDF(arrayBuffer);
+                  if (ocrResult.success && ocrResult.text) {
+                    ocrPerformed = true;
+                    ocrText = ocrResult.text;
+                    ocrConfidence = ocrResult.confidence;
+                    pdfText = ocrResult.text; // Use OCR text for parsing
+                    console.log(`✅ OCR completed: ${ocrText.length} chars, ${ocrConfidence?.toFixed(1)}% confidence`);
+                  } else {
+                    console.error(`❌ OCR failed for ${file.name}:`, ocrResult.error);
+                  }
+                }
+              }
+            }
+            
+            // Step 3: Extract structured data from the text
+            if (pdfText) {
+              // Use the text-based extraction with our OCR or extracted text
+              const { PDFContentParser } = await import('../services/documentParser/pdfContentParser');
+              const parser = new PDFContentParser();
+              pdfData = parser.extractFromText(pdfText);
+              console.log(`📊 Extracted data from ${isScanned ? 'OCR' : 'PDF'} text:`, pdfData);
+            } else {
+              // Fallback to array buffer parsing
+              pdfData = await extractFromPDF(arrayBuffer);
+              console.log(`📊 Fallback extraction completed:`, pdfData);
+            }
+            
+            // Step 4: Merge all data (filename takes priority)
+            const updatedMetadata = {
+              ...file,
+              section: file.section || suggestions.section || 'other',
+              description: file.description || '',
+              ...suggestions,
+              // Add PDF-extracted data
+              courtReference: suggestions.courtReference || (pdfData?.caseNumber ? pdfData.caseNumber : undefined),
+              judgeName: suggestions.judgeName || (pdfData?.judgeName ? pdfData.judgeName : undefined),
+              personName: suggestions.personName || (pdfData?.personName ? pdfData.personName : undefined),
+              // Add auto-population and OCR flags
+              autopopulationPerformed: true,
+              ocrPerformed: ocrPerformed,
+              ocrText: ocrText || undefined,
+              ocrConfidence: ocrConfidence,
+              ocrDate: ocrPerformed ? new Date().toISOString() : undefined
+            };
+            
+            // Step 5: Update the file
+            if (onFileEdit && file.id) {
+              await onFileEdit(file.id, updatedMetadata);
+            }
+            
+            const status = ocrPerformed ? 'OCR processed' : 'Auto-populated';
+            console.log(`✅ ${status}: ${file.name}`);
+            
+          } catch (error) {
+            console.error(`❌ Error processing ${file.name}:`, error);
+          }
+        }
+        
+        // Longer delay for OCR processing
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+      } catch (error) {
+        console.error(`❌ Error processing ${file.name}:`, error);
+      }
+    }
+    
+    setIsBatchProcessing(false);
+    setBatchProgress({ current: 0, total: 0, currentFile: '' });
+    console.log('🎉 Batch OCR processing completed');
+  };
+
   // Filter and sort files
   const processedFiles = useMemo(() => {
     let files = uploadedFiles as ExtendedFile[];
@@ -144,7 +279,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
   }, [uploadedFiles]);
   
   const categories = [
-    { id: 'all', label: 'All Documents', icon: '📚' },
+    { id: 'all', label: 'All Documents', icon: '📚', important: false },
     ...sections.map(section => {
       const iconMap: { [key: string]: string } = {
         'preliminary': '📋',
@@ -160,10 +295,15 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
         'evidence': '🔍',
         'other': '📄'
       };
+      
+      // Mark important sections for bold styling
+      const importantSections = ['orders', 'statements', 'experts'];
+      
       return {
         id: section.id,
         label: section.label,
-        icon: iconMap[section.id] || '📄'
+        icon: iconMap[section.id] || '📄',
+        important: importantSections.includes(section.id)
       };
     })
   ];
@@ -190,6 +330,14 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             <option value="type">Sort by Type</option>
             <option value="section">Sort by Section</option>
           </select>
+          <button
+            onClick={() => setShowOcrAllDialog(true)}
+            disabled={isBatchProcessing || uploadedFiles.filter(f => f.type.includes('pdf')).length === 0}
+            className="btn primary ocr-all-btn"
+            title="OCR and auto-populate all PDF documents"
+          >
+            {isBatchProcessing ? '🔄 Processing...' : '🔍 OCR ALL'}
+          </button>
         </div>
       </div>
 
@@ -200,7 +348,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
           {categories.map((cat) => (
             <button
               key={cat.id}
-              className={`filter-btn ${filter === cat.id ? 'active' : ''}`}
+              className={`filter-btn ${filter === cat.id ? 'active' : ''} ${cat.important ? 'important' : ''}`}
               onClick={() => setFilter(cat.id)}
             >
               <span className="filter-icon">{cat.icon}</span>
@@ -278,6 +426,15 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                                 🔍
                               </span>
                             )}
+                            {/* Text PDF processed indicator */}
+                            {file.type.includes('pdf') && file.autopopulationPerformed && !file.ocrPerformed && (
+                              <span 
+                                className="status-indicator text-pdf-processed"
+                                title="Text PDF processed - auto-populated from content"
+                              >
+                                ✅
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="doc-section-indicator">
@@ -335,6 +492,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
         isOpen={isEditModalOpen}
         onClose={handleEditClose}
         onSave={handleEditSave}
+        onDelete={onFileDelete}
         vaultType={currentVault}
       />
 
@@ -345,6 +503,83 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
         onClose={handlePagePruneClose}
         onSave={handlePagePruneSave}
       />
+
+      {/* OCR ALL Confirmation Dialog */}
+      {showOcrAllDialog && (
+        <div className="modal-overlay" onClick={() => setShowOcrAllDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🔍 OCR ALL Documents</h3>
+              <button className="close-btn" onClick={() => setShowOcrAllDialog(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="ocr-all-info">
+                <p><strong>This will process {uploadedFiles.filter(f => f.type.includes('pdf')).length} PDF documents:</strong></p>
+                <ul>
+                  <li>📄 Extract text from text-based PDFs</li>
+                  <li>🔍 Run OCR on scanned PDFs to extract readable text</li>
+                  <li>⚖️ Auto-populate metadata from filename and PDF content</li>
+                  <li>📝 Extract court references, judge names, and document types</li>
+                  <li>✅ Update visual indicators and processing status</li>
+                </ul>
+                <div className="warning-box">
+                  <p><strong>⚠️ Important:</strong></p>
+                  <p>OCR processing can take 10-15 seconds per scanned document. Text PDFs will process much faster.</p>
+                  <p>Automatic extraction may make mistakes - always review and verify extracted information, especially court references and legal details.</p>
+                  <p>This will reprocess ALL PDFs, even previously processed ones.</p>
+                </div>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button 
+                onClick={() => setShowOcrAllDialog(false)}
+                className="btn secondary"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBatchOcrStart}
+                className="btn primary"
+              >
+                🚀 Start OCR Processing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Batch Processing Progress Modal */}
+      {isBatchProcessing && (
+        <div className="modal-overlay">
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🔄 Processing Documents</h3>
+            </div>
+            <div className="modal-body">
+              <div className="batch-progress">
+                <div className="progress-info">
+                  <p><strong>Processing:</strong> {batchProgress.currentFile}</p>
+                  <p><strong>Progress:</strong> {batchProgress.current} of {batchProgress.total} files</p>
+                </div>
+                <div className="progress-bar-container">
+                  <div 
+                    className="progress-bar"
+                    style={{ 
+                      width: `${batchProgress.total > 0 ? (batchProgress.current / batchProgress.total) * 100 : 0}%` 
+                    }}
+                  />
+                </div>
+                <div className="progress-percentage">
+                  {batchProgress.total > 0 ? Math.round((batchProgress.current / batchProgress.total) * 100) : 0}%
+                </div>
+                <p className="processing-note">
+                  🔍 Running OCR and auto-population... Please wait.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

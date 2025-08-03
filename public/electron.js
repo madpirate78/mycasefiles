@@ -1,6 +1,9 @@
 const { app, BrowserWindow, ipcMain, Menu } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === 'true';
+
+// Set UK locale for proper date formatting
+app.commandLine.appendSwitch('lang', 'en-GB');
 const pdfParse = require('pdf-parse');
 const fs = require('fs');
 const Tesseract = require('tesseract.js');

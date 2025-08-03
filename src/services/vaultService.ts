@@ -144,6 +144,12 @@ class VaultService {
       ];
     }
   }
+
+  // Move a file from one vault to another
+  async moveFileToVault(fileId: number, newVaultType: VaultType): Promise<void> {
+    const { updateFile } = await import('./indexedDBService');
+    await updateFile(fileId, { vaultType: newVaultType });
+  }
 }
 
 const vaultService = new VaultService();
