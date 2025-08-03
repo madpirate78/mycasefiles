@@ -153,7 +153,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       ocrConfidence: file?.ocrConfidence,
       ocrDate: file?.ocrDate
     });
-    setPdfText('');
+    // setPdfText('');
     setOcrStatus({
       isScanned: false,
       isProcessing: false,
@@ -311,7 +311,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           });
           // Also set the PDF text if OCR was previously performed
           if (finalMetadata.ocrText) {
-            setPdfText(finalMetadata.ocrText);
+            // setPdfText(finalMetadata.ocrText);
           }
         }
       }
@@ -345,7 +345,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         }));
         
         // Store OCR text for parsing
-        setPdfText(ocrResult.text);
+        // setPdfText(ocrResult.text);
         
         // Re-run extraction with OCR text
         try {
