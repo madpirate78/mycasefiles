@@ -24,26 +24,6 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
   const [totalPages, setTotalPages] = useState<number>(1);
   const webviewRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    if (file) {
-      console.log('ElectronPDFRenderer: Loading file:', file.name, file.type, file.size);
-      
-      // Create blob URL for the PDF
-      const url = URL.createObjectURL(file);
-      setPdfUrl(url);
-      setIsLoading(false);
-      
-      // Extract page information from PDF (using our existing parser)
-      if (window.electron) {
-        extractPDFInfo(file);
-      }
-      
-      return () => {
-        URL.revokeObjectURL(url);
-      };
-    }
-  }, [file]);
-
   const extractPDFInfo = useCallback(async (pdfFile: File) => {
     try {
       if (!window.electron) return;
@@ -64,6 +44,26 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
       onError?.(err instanceof Error ? err.message : 'Failed to load PDF');
     }
   }, [onLoad, onError]);
+
+  useEffect(() => {
+    if (file) {
+      console.log('ElectronPDFRenderer: Loading file:', file.name, file.type, file.size);
+      
+      // Create blob URL for the PDF
+      const url = URL.createObjectURL(file);
+      setPdfUrl(url);
+      setIsLoading(false);
+      
+      // Extract page information from PDF (using our existing parser)
+      if (window.electron) {
+        extractPDFInfo(file);
+      }
+      
+      return () => {
+        URL.revokeObjectURL(url);
+      };
+    }
+  }, [file, extractPDFInfo]);
 
   // Sync with external page number
   useEffect(() => {
