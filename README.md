@@ -1,6 +1,8 @@
 # MyCaseFiles - Desktop Legal Document Management System
 
-⚠️ **DESKTOP APPLICATION ONLY** - This app requires Electron for PDF text extraction and must be run as a desktop application. Browser mode has limited functionality and is not recommended for production use.
+🖥️ **ELECTRON DESKTOP APPLICATION ONLY** 
+
+⚠️ **CRITICAL**: This application is designed exclusively as an Electron desktop app and requires native desktop capabilities for core functionality including PDF text extraction, OCR processing, and file system access. **Web browser deployment is not supported and will not work correctly.**
 
 A comprehensive legal case management desktop application designed for self-represented litigants and legal professionals. Built with React, TypeScript, and Electron, featuring advanced PDF document organization, intelligent text extraction, automated metadata population for UK family court documents, and manual OCR for scanned documents.
 
@@ -59,47 +61,86 @@ A comprehensive legal case management desktop application designed for self-repr
 - **Progressive Disclosure**: Complexity revealed only when needed
 - **Visual Feedback**: Clear status indicators and interactive elements
 
-## 💾 Installation
+## 🚀 Deployment Strategy
 
-### For End Users
-**Windows Installation Packages** are available via GitHub Releases:
-1. Go to the [Releases](../../releases) section
-2. Download the latest `My Case Files Setup X.X.X.exe` 
-3. Run the installer and follow the setup wizard
-4. Launch "My Case Files" from your desktop or start menu
+### 📦 Production Deployment - GitHub Releases (Recommended)
 
-### GitHub Releases Setup (For Developers)
-See **[GitHub Releases Setup Guide](docs/GITHUB_RELEASES_SETUP.md)** for complete instructions on setting up automated Windows installer builds and distribution.
+**This is the primary and recommended deployment method for end users:**
 
-## 🚀 Getting Started
+#### For End Users:
+1. **Download Installer**: Go to [Releases](../../releases) section
+2. **Install**: Download and run `My Case Files Setup X.X.X.exe`
+3. **Launch**: Use desktop shortcut or start menu
 
-### Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn package manager
-- Operating System: Windows, macOS, or Linux
-- System libraries for Electron (auto-installed on most systems)
+#### For Developers:
+- **Automated Builds**: GitHub Actions creates Windows installers on version tags
+- **Release Management**: `npm run version-patch` creates releases automatically
+- **Distribution**: Private repository supports controlled access
+- **Setup Guide**: See [GitHub Releases Setup Guide](docs/GITHUB_RELEASES_SETUP.md)
 
-### Installation
+### 🔧 Development Deployment
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd mycasefiles
-   ```
+#### Prerequisites:
+- **Node.js** v18+ required for optimal compatibility
+- **Windows/macOS/Linux** desktop environment
+- **Native Electron capabilities** (no web browser support)
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-   This automatically sets up Electron dependencies and PDF processing libraries.
+#### Quick Start:
+```bash
+# Clone and install
+git clone <repository-url>
+cd mycasefiles
+npm install
 
-3. **Launch desktop application**
-   ```bash
-   npm run build && npm run electron
-   ```
-   Builds the React app and launches the Electron desktop application.
+# Run in development mode (recommended)
+npm run dev-electron
 
-   ⚠️ **IMPORTANT**: This app must be run in Electron mode for full functionality including PDF text extraction and OCR capabilities.
+# Or run with hot reload (requires React dev server)
+npm start  # Terminal 1
+npm run electron-dev  # Terminal 2
+```
+
+### ❌ Unsupported Deployment Methods
+
+#### Web Browser Deployment - NOT SUPPORTED
+- **React build output** cannot be deployed to web servers
+- **Missing functionality**: PDF parsing, OCR, file system access
+- **Browser limitations**: IndexedDB, local file handling insufficient
+- **No workarounds available** - desktop app architecture required
+
+#### Cloud/Server Deployment - NOT APPLICABLE  
+- **Client-side application**: No server component exists
+- **Local data storage**: IndexedDB keeps all data on user's machine
+- **Privacy by design**: No cloud storage or external dependencies
+
+## 🛠️ Development Setup
+
+### System Requirements
+- **Node.js v18+** (recommended for latest features)
+- **npm** package manager
+- **Desktop OS**: Windows, macOS, or Linux
+- **Electron runtime** (auto-installed via npm)
+
+### Development Workflow
+
+#### Standard Development (Recommended)
+```bash
+git clone <repository-url>
+cd mycasefiles
+npm install
+npm run dev-electron  # Builds React + launches Electron
+```
+
+#### Hot Reload Development (Advanced)
+```bash
+# Terminal 1 - React development server
+npm start
+
+# Terminal 2 - Electron with hot reload (once React is running)
+npm run electron-dev
+```
+
+⚠️ **Critical**: All core functionality requires Electron runtime - never attempt browser-only development.
 
 ### System Setup (Linux/WSL)
 If Electron fails to launch, install required system libraries:
@@ -127,26 +168,32 @@ npm start
 ```
 Opens [http://localhost:3000](http://localhost:3000) for UI development only. **WARNING**: Browser mode cannot perform PDF text extraction, OCR, or document parsing. Use only for UI styling work.
 
-### Available Scripts
+### 📋 Command Reference
 
-**Development & Testing:**
-- **`npm run dev-electron`** - **RECOMMENDED** Build and launch with fresh code (no caching issues)
-- **`npm run electron`** - Quick launch (may use cached build)
-- **`npm start`** - ⚠️ React development server (web mode, **severely limited** - no PDF parsing, no OCR)
-- **`npm run electron-dev`** - Electron development with hot reload (connects to React dev server)
+#### Development Commands
+- **`npm run dev-electron`** - 🔥 **RECOMMENDED** Fresh build + Electron launch
+- **`npm run electron`** - Quick Electron launch (may use cached build)
+- **`npm run electron-dev`** - Hot reload development (requires `npm start` first)
+- **`npm start`** - ⚠️ React dev server (UI styling only - **core features disabled**)
 
-**Production:**
-- **`npm run build`** - Build React app for production
-- **`npm run build-electron`** - Build and package Electron app
-- **`npm run dist`** - Create distributable desktop packages (Windows/macOS/Linux)
+#### Production & Release Commands
+- **`npm run build`** - Production React build (required before Electron packaging)
+- **`npm run dist`** - Create Windows installer (requires Windows or GitHub Actions)
+- **`npm run version-patch`** - 🚀 **Create release** (0.1.0 → 0.1.1) + trigger automated build
+- **`npm run version-minor`** - 🚀 **Create release** (0.1.0 → 0.2.0) + trigger automated build
+- **`npm run version-major`** - 🚀 **Create release** (0.1.0 → 1.0.0) + trigger automated build
 
-**Utilities:**
-- **`npm test`** - Run test suite
+#### Deployment Workflow
+```bash
+# 1. Development and testing
+npm run dev-electron
 
-**Release Management:**
-- **`npm run version-patch`** - Create patch release (0.1.0 → 0.1.1) and trigger GitHub build
-- **`npm run version-minor`** - Create minor release (0.1.0 → 0.2.0) and trigger GitHub build  
-- **`npm run version-major`** - Create major release (0.1.0 → 1.0.0) and trigger GitHub build
+# 2. Create production release
+npm run version-patch  # Auto-triggers GitHub Actions build
+
+# 3. Download installer from GitHub Releases
+# 4. Distribute to end users
+```
 
 ## 🏗️ Project Structure
 
@@ -192,9 +239,37 @@ docs/
 └── LOCAL_LLM.md               # Local AI model documentation and setup
 ```
 
-## 🔧 Technical Architecture
+## 🏗️ Architecture & Why Electron-Only
 
-### Desktop Application
+### Core Dependencies Requiring Native Desktop
+
+**PDF Text Extraction**
+- **pdf-parse library**: Runs in Node.js main process only
+- **Full document parsing**: Extracts text, metadata, structure
+- **Court document intelligence**: UK family court pattern recognition
+- **Browser limitation**: Web workers cannot access Node.js libraries
+
+**OCR Processing**  
+- **Tesseract.js**: Requires file system access for model loading
+- **High-quality scanning**: Multi-page document processing
+- **Performance**: Native image processing vs. browser constraints
+- **Browser limitation**: Limited file access and processing power
+
+**File System Operations**
+- **Direct file access**: Reading PDF binaries, writing extracted data
+- **Local storage**: IndexedDB for document metadata and text cache  
+- **Folder imports**: Batch processing of document directories
+- **Browser limitation**: Security restrictions prevent direct file system access
+
+**IPC Architecture**
+- **Main process**: Node.js with full system access (PDF parsing, OCR)
+- **Renderer process**: React UI with restricted but secure communication
+- **Preload script**: Safe bridge between main and renderer processes
+- **Browser limitation**: No equivalent secure communication model
+
+### Technical Architecture
+
+#### Desktop Application
 - **Electron**: Native desktop wrapper with full Node.js capabilities
 - **IPC Communication**: Secure main/renderer process communication via preload script
 - **Cross-Platform**: Windows, macOS, and Linux support via electron-builder
