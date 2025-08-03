@@ -145,10 +145,12 @@ class BundleGenerationService {
     console.log('📄 Calculating pagination for bundle sections...');
     
     for (const section of sections) {
+      // Section divider page comes first
       section.startPage = currentPage;
-      let sectionPageCount = 0;
+      console.log(`📂 Section ${section.letter}: ${section.label} divider page at ${currentPage}`);
       
-      console.log(`📂 Section ${section.letter}: ${section.label} starts at page ${currentPage}`);
+      currentPage++; // Move to next page after section divider
+      let sectionPageCount = 1; // Start with 1 for the section divider page
       
       for (const doc of section.documents) {
         let docPageCount = 0;
@@ -168,8 +170,8 @@ class BundleGenerationService {
           console.log(`📄 Document "${doc.file.name}": defaulting to 1 page (no page info)`);
         }
         
-        // Store document-specific bundle pagination
-        const docStartPage = currentPage + sectionPageCount;
+        // Document starts after section divider
+        const docStartPage = currentPage;
         const docEndPage = docStartPage + docPageCount - 1;
         
         // Add pagination info to the document object
@@ -179,13 +181,13 @@ class BundleGenerationService {
         
         console.log(`📄 Document "${doc.file.name}": bundle pages ${docStartPage}-${docEndPage}`);
         
+        currentPage += docPageCount; // Move past document pages
         sectionPageCount += docPageCount;
       }
       
-      section.endPage = currentPage + sectionPageCount - 1;
-      currentPage = section.endPage + 1;
+      section.endPage = section.startPage + sectionPageCount - 1;
       
-      console.log(`📂 Section ${section.letter}: pages ${section.startPage}-${section.endPage} (${sectionPageCount} pages total)`);
+      console.log(`📂 Section ${section.letter}: pages ${section.startPage}-${section.endPage} (${sectionPageCount} pages total including divider)`);
     }
     
     const totalPages = currentPage - 1;
@@ -263,7 +265,7 @@ class BundleGenerationService {
         label: s.label,
         letter: s.letter,
         documentCount: s.documents.length,
-        startPage: s.startPage,
+        startPage: s.startPage, // This is the section divider page
         endPage: s.endPage,
         pageCount: s.endPage - s.startPage + 1
       }))
