@@ -12,6 +12,7 @@
     "@testing-library/user-event": "^13.5.0",
     "electron-is-dev": "^3.0.1",
     "node-poppler": "^8.0.4",
+    "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",

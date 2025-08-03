@@ -3,6 +3,7 @@ import { StoredFile } from '../services/indexedDBService';
 import bundleService, { Bundle } from '../services/bundleService';
 import { formatStoredDate } from '../utils/dateUtils';
 import vaultService from '../services/vaultService';
+import bundleGenerationService from '../services/bundleGenerationService';
 
 interface BundleListProps {
   uploadedFiles: StoredFile[];
@@ -12,10 +13,12 @@ const BundleList: React.FC<BundleListProps> = ({ uploadedFiles }) => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showVerifyModal, setShowVerifyModal] = useState(false);
+  const [showProgressModal, setShowProgressModal] = useState(false);
   const [editingBundle, setEditingBundle] = useState<Bundle | null>(null);
   const [verifyingBundle, setVerifyingBundle] = useState<Bundle | null>(null);
   const [bundles, setBundles] = useState<Bundle[]>([]);
   const [selectedDocuments, setSelectedDocuments] = useState<number[]>([]);
+  const [bundleProgress, setBundleProgress] = useState<any>(null);
   const [newBundleData, setNewBundleData] = useState({
     name: '',
     caseReference: '',
@@ -229,19 +232,50 @@ const BundleList: React.FC<BundleListProps> = ({ uploadedFiles }) => {
       
       console.log('Selected files for bundle:', selectedFiles.length);
       
-      // TODO: Implement PDF bundle creation
-      // This will need to:
-      // 1. Create an index page with links to each section
-      // 2. Organize documents by sections
-      // 3. Add page numbers and pagination
-      // 4. Combine all PDFs into a single bundle
-      // 5. Add watermark if needed
+      // Show progress modal
+      setShowProgressModal(true);
+      setBundleProgress({ stage: 'starting', progress: 0, message: 'Preparing bundle creation...' });
       
-      alert(`PDF creation started for "${bundle.name}" with ${selectedFiles.length} documents. This feature is under development.`);
+      // Setup progress listener
+      const cleanup = bundleGenerationService.setupProgressListener((progress) => {
+        setBundleProgress(progress);
+      });
+      
+      try {
+        // Generate the bundle
+        const result = await bundleGenerationService.generateBundle(bundle, selectedFiles);
+        
+        if (result.success) {
+          setBundleProgress({ 
+            stage: 'complete', 
+            progress: 100, 
+            message: `Bundle "${result.filename}" created successfully!` 
+          });
+          
+          // Auto-close progress modal after 2 seconds
+          setTimeout(() => {
+            setShowProgressModal(false);
+            setBundleProgress(null);
+          }, 2000);
+          
+        } else {
+          setBundleProgress({ 
+            stage: 'error', 
+            progress: 0, 
+            message: `Error: ${result.error}` 
+          });
+        }
+      } finally {
+        cleanup(); // Remove progress listener
+      }
       
     } catch (error) {
       console.error('Error creating PDF bundle:', error);
-      alert('Failed to create PDF bundle. Please try again.');
+      setBundleProgress({ 
+        stage: 'error', 
+        progress: 0, 
+        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}` 
+      });
     }
   };
 
@@ -289,7 +323,7 @@ const BundleList: React.FC<BundleListProps> = ({ uploadedFiles }) => {
                 </div>
               </div>
               <div className="bundle-actions">
-                <button className="action-btn" onClick={() => handleEditBundle(bundle)}>Edit</button>
+                <button className="action-btn" onClick={() => handleEditBundle(bundle)}>Edit Case Details</button>
                 <button className="action-btn" onClick={() => handleVerifyDocuments(bundle)}>Verify Documents</button>
                 <button className="action-btn" onClick={() => handleCreatePDF(bundle)}>Create PDF</button>
               </div>
@@ -518,6 +552,51 @@ const BundleList: React.FC<BundleListProps> = ({ uploadedFiles }) => {
               >
                 Save Selection
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bundle Creation Progress Modal */}
+      {showProgressModal && bundleProgress && (
+        <div className="modal-overlay">
+          <div className="modal-content progress-modal">
+            <div className="modal-header">
+              <h2>Creating Bundle PDF</h2>
+              {bundleProgress.stage === 'error' && (
+                <button className="close-btn" onClick={() => setShowProgressModal(false)}>×</button>
+              )}
+            </div>
+            <div className="modal-body">
+              <div className="progress-container">
+                <div className="progress-bar">
+                  <div 
+                    className="progress-fill" 
+                    style={{ 
+                      width: `${bundleProgress.progress}%`,
+                      backgroundColor: bundleProgress.stage === 'error' ? '#f44336' : '#4caf50'
+                    }}
+                  ></div>
+                </div>
+                <div className="progress-text">
+                  {bundleProgress.message}
+                </div>
+                <div className="progress-percentage">
+                  {bundleProgress.progress}%
+                </div>
+              </div>
+              {bundleProgress.stage === 'error' && (
+                <div className="error-actions">
+                  <button className="btn secondary" onClick={() => setShowProgressModal(false)}>
+                    Close
+                  </button>
+                </div>
+              )}
+              {bundleProgress.stage === 'complete' && (
+                <div className="success-message">
+                  ✅ Bundle created successfully! The PDF has been opened in your default PDF viewer.
+                </div>
+              )}
             </div>
           </div>
         </div>

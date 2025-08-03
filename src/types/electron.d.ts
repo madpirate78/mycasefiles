@@ -24,6 +24,20 @@ declare global {
         extractionMethod?: 'OCR';
         error?: string;
       }>;
+      createPDFBundle: (bundleData: any) => Promise<{
+        success: boolean;
+        filename?: string;
+        size?: number;
+        pdfBytes?: number[];
+        filePath?: string;
+        error?: string;
+      }>;
+      onBundleProgress: (callback: (event: any, progress: {
+        stage: 'initializing' | 'processing' | 'finalizing' | 'complete' | 'error';
+        progress: number;
+        message: string;
+      }) => void) => void;
+      removeBundleProgressListener: (callback: (event: any, progress: any) => void) => void;
     };
     electron?: {
       parsePDF: (arrayBuffer: ArrayBuffer) => Promise<{
