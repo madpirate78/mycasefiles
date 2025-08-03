@@ -26,23 +26,6 @@ const PagePruneModal: React.FC<PagePruneModalProps> = ({
   const [pages, setPages] = useState<PageInfo[]>([]);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string>('');
 
-  // Load PDF page data when modal opens
-  useEffect(() => {
-    if (isOpen && file && file.type.includes('pdf')) {
-      // Create blob URL for PDF viewing
-      const blobUrl = URL.createObjectURL(file.data);
-      setPdfBlobUrl(blobUrl);
-      loadPDFPages();
-      
-      // Cleanup function
-      return () => {
-        if (blobUrl) {
-          URL.revokeObjectURL(blobUrl);
-        }
-      };
-    }
-  }, [isOpen, file, loadPDFPages]);
-
   const loadPDFPages = useCallback(async () => {
     if (!file) return;
 
@@ -77,6 +60,23 @@ const PagePruneModal: React.FC<PagePruneModalProps> = ({
       setLoading(false);
     }
   }, [file]);
+
+  // Load PDF page data when modal opens
+  useEffect(() => {
+    if (isOpen && file && file.type.includes('pdf')) {
+      // Create blob URL for PDF viewing
+      const blobUrl = URL.createObjectURL(file.data);
+      setPdfBlobUrl(blobUrl);
+      loadPDFPages();
+      
+      // Cleanup function
+      return () => {
+        if (blobUrl) {
+          URL.revokeObjectURL(blobUrl);
+        }
+      };
+    }
+  }, [isOpen, file, loadPDFPages]);
 
   const togglePage = (pageNumber: number) => {
     const updatedPages = pages.map(page => 
