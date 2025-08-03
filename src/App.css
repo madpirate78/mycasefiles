@@ -6,18 +6,22 @@
 }
 
 :root {
-  /* Calm color palette */
+  /* Subtle brand integration - keep calm, stress-free appearance */
+  --primary: #4A90E2;           /* Keep original calm blue for primary */
+  --accent: #ff6b35;            /* Brand orange - only for critical CTAs */
+  --danger: #d73a49;            /* Alert Red - critical emphasis only */
+  --light-gray: #f5f7fa;        /* Light Grey - backgrounds */
+  --medium-gray: #e1e4e8;       /* Border colors */
+  --dark-gray: #586069;         /* Secondary text */
+  --text-primary: #24292e;      /* Keep original calm dark text */
+  --text-secondary: #586069;    /* Secondary text */
+  --white: #ffffff;             /* Pure white */
+  --success: #28A745;           /* Keep existing success color */
+  --warning: #FFC107;           /* Keep existing warning color */
+  
+  /* Legacy aliases for compatibility */
   --primary-blue: #4A90E2;
   --secondary-blue: #357ABD;
-  --light-gray: #F5F7FA;
-  --medium-gray: #E1E4E8;
-  --dark-gray: #586069;
-  --text-primary: #24292E;
-  --text-secondary: #586069;
-  --white: #FFFFFF;
-  --success: #28A745;
-  --danger: #DC3545;
-  --warning: #FFC107;
   
   /* Vault-specific color schemes */
   --child-primary: #4A90E2;
@@ -316,16 +320,29 @@ body {
   display: flex;
   align-items: center;
   padding: var(--spacing-md) var(--spacing-xl);
-  background: linear-gradient(135deg, var(--child-primary), var(--child-secondary));
+  background: linear-gradient(135deg, var(--primary-blue), var(--secondary-blue));
   border-bottom: 1px solid var(--medium-gray);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: auto;
+}
+
+.logo-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  opacity: 0.9;
+}
+
+.logo-text {
   font-size: 24px;
   font-weight: 600;
   color: var(--white);
-  margin-right: auto;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 

@@ -359,7 +359,10 @@ function App() {
       )}
       
       <header className="app-header">
-        <div className="logo">MyCaseFiles</div>
+        <div className="logo">
+          <img src="/wtf-logo.svg" alt="WTF Logo" className="logo-icon" />
+          <span className="logo-text">MyCaseFiles</span>
+        </div>
         <VaultSelector 
           currentVault={currentVault}
           onVaultChange={handleVaultChange}

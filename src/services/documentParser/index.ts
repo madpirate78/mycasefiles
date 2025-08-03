@@ -45,7 +45,7 @@ export function detectVaultType(filename: string, pdfText?: string): 'child' | '
 /**
  * Extract key information from PDF content (court reference, document type, judge name, person name for statements)
  */
-export async function extractFromPDF(pdfBuffer: ArrayBuffer): Promise<{ caseNumber: string | null; documentType: 'order' | 'application' | 'statement' | null; judgeName: string | null; personName?: string | null }> {
+export async function extractFromPDF(pdfBuffer: ArrayBuffer): Promise<{ caseNumber: string | null; documentType: 'order' | 'application' | 'statement' | 'judgment' | null; judgeName: string | null; personName?: string | null }> {
   const parser = new PDFContentParser();
   return parser.extractFromPDF(pdfBuffer);
 }

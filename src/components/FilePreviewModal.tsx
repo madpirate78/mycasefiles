@@ -303,11 +303,15 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           }
           
           if (pdfData.documentType && !finalMetadata.documentType && !finalMetadata.orderType) {
-            // Map PDF document type to form document type
-            if (pdfData.documentType === 'order' && finalMetadata.section === 'orders') {
-              finalMetadata.orderType = 'order'; // Default to order type
-            } else if (pdfData.documentType === 'application' && finalMetadata.section === 'orders') {
-              finalMetadata.orderType = 'application'; // Default to application type
+            // Map PDF document type to form document type for orders section
+            if (finalMetadata.section === 'orders') {
+              if (pdfData.documentType === 'order') {
+                finalMetadata.orderType = 'order';
+              } else if (pdfData.documentType === 'application') {
+                finalMetadata.orderType = 'application';
+              } else if (pdfData.documentType === 'judgment') {
+                finalMetadata.orderType = 'judgment';
+              }
             }
             // For applications, filename parsing is usually better
           }
@@ -485,7 +489,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           options: [
             { value: 'application', label: 'Application' },
             { value: 'order', label: 'Order' },
-            { value: 'judgment', label: 'Judgment' },
+            { value: 'judgment', label: 'Judgement' },
             { value: 'transcript', label: 'Transcript' }
           ]
         },
@@ -622,7 +626,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
               options: [
                 { value: 'application', label: 'Application' },
                 { value: 'order', label: 'Order' },
-                { value: 'judgment', label: 'Judgment' },
+                { value: 'judgment', label: 'Judgement' },
                 { value: 'transcript', label: 'Transcript' }
               ]
             },

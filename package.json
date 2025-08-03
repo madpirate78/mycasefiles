@@ -97,7 +97,7 @@
           ]
         }
       ],
-      "icon": "public/logo512.png",
+      "icon": "public/icon.ico",
       "legalTrademarks": "MyCaseFiles"
     },
     "nsis": {
@@ -108,10 +108,12 @@
       "shortcutName": "My Case Files"
     },
     "mac": {
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "icon": "public/icon-512.png"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "public/icon-512.png"
     }
   }
 }

@@ -134,6 +134,22 @@ export class PDFContentParser {
       { pattern: /Court\s+Order/i, type: 'order' },
       { pattern: /IT\s+IS\s+ORDERED/i, type: 'order' },
       
+      // Judgment patterns - CHECK SECOND (high priority)
+      { pattern: /JUDGMENT/i, type: 'judgment' },
+      { pattern: /JUDGEMENT/i, type: 'judgment' },
+      { pattern: /THE\s+COURT\s+(?:FINDS|DECLARES|HOLDS)/i, type: 'judgment' },
+      { pattern: /THIS\s+COURT\s+(?:FINDS|DECLARES|HOLDS)/i, type: 'judgment' },
+      { pattern: /RESERVED\s+JUDGMENT/i, type: 'judgment' },
+      { pattern: /EX\s+TEMPORE\s+JUDGMENT/i, type: 'judgment' },
+      { pattern: /APPROVED\s+JUDGMENT/i, type: 'judgment' },
+      { pattern: /HANDED\s+DOWN\s+JUDGMENT/i, type: 'judgment' },
+      { pattern: /JUDGMENT\s+DELIVERED/i, type: 'judgment' },
+      { pattern: /REASONS\s+FOR\s+JUDGMENT/i, type: 'judgment' },
+      { pattern: /HAVING\s+HEARD.*?I\s+FIND/i, type: 'judgment' },
+      { pattern: /THE\s+FACTS\s+ARE/i, type: 'judgment' },
+      { pattern: /I\s+CONCLUDE\s+THAT/i, type: 'judgment' },
+      { pattern: /MY\s+FINDINGS\s+ARE/i, type: 'judgment' },
+      
       // Application patterns
       { pattern: /Application\s+for/i, type: 'application' },
       { pattern: /FL401\s+Application/i, type: 'application' },
@@ -360,11 +376,11 @@ export class PDFContentParser {
   /**
    * Identify if document is an order, application, or statement
    */
-  private identifyDocumentType(text: string): 'order' | 'application' | 'statement' | null {
+  private identifyDocumentType(text: string): 'order' | 'application' | 'statement' | 'judgment' | null {
     // Check each pattern with its type - statements checked first
     for (const item of this.patterns.documentType) {
       if (item.pattern.test(text)) {
-        return item.type as 'order' | 'application' | 'statement';
+        return item.type as 'order' | 'application' | 'statement' | 'judgment';
       }
     }
 

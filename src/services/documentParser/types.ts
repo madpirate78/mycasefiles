@@ -1,7 +1,7 @@
 // Types for extracted data - simplified for current use
 export interface CourtDocumentData {
   caseNumber: string | null;
-  documentType: 'order' | 'application' | 'statement' | null;
+  documentType: 'order' | 'application' | 'statement' | 'judgment' | null;
   judgeName: string | null;
   personName?: string | null;  // For statements - the person making the statement
   
@@ -28,7 +28,7 @@ export interface CourtDocumentData {
 // Filename extraction result
 export interface FilenameData {
   caseNumber?: string | null;
-  documentType?: 'order' | 'application' | 'statement' | null;
+  documentType?: 'order' | 'application' | 'statement' | 'judgment' | null;
   applicationType?: string | null;
   date?: Date | null;
   formType?: string | null;
