@@ -114,7 +114,7 @@ class BundleGenerationService {
       }
     });
     
-    // Sort documents within each section by date
+    // Sort documents within each section by date (oldest first)
     sections.forEach(section => {
       section.documents.sort((a, b) => {
         const aDate = a.file.date;
@@ -125,8 +125,8 @@ class BundleGenerationService {
         if (!aDate) return 1;
         if (!bDate) return -1;
         
-        // Sort by date (most recent first)
-        return new Date(bDate).getTime() - new Date(aDate).getTime();
+        // Sort by date (oldest first)
+        return new Date(aDate).getTime() - new Date(bDate).getTime();
       });
     });
     

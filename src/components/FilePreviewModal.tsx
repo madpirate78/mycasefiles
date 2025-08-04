@@ -142,6 +142,14 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
   // Vault change confirmation dialog state
   const [showVaultChangeConfirm, setShowVaultChangeConfirm] = useState(false);
   const [pendingVaultChange, setPendingVaultChange] = useState<VaultType | null>(null);
+  const [updatedFileData, setUpdatedFileData] = useState<File | null>(null);
+
+  // Reset updated file data when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setUpdatedFileData(null);
+    }
+  }, [isOpen]);
 
   // Load existing metadata when file changes (not vault type)
   useEffect(() => {
@@ -379,7 +387,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
           const searchableBlob = new Blob([ocrResult.searchablePdf], { type: 'application/pdf' });
           const searchableFile = new File([searchableBlob], file.name, { type: 'application/pdf' });
           
-          // Update the file data with searchable PDF - useMemo will trigger re-render
+          // Update the file data with searchable PDF
+          setUpdatedFileData(searchableFile);
+          // Also update the file object for immediate preview update
           (file as any).data = searchableFile;
         }
         
@@ -849,7 +859,9 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
       ocrPerformed: metadata.ocrPerformed,
       ocrText: metadata.ocrText,
       ocrConfidence: metadata.ocrConfidence,
-      ocrDate: metadata.ocrDate
+      ocrDate: metadata.ocrDate,
+      // Include updated file data if OCR created a searchable PDF
+      ...(updatedFileData ? { data: updatedFileData } : {})
     };
 
     onSave(file.id!, completeMetadata);

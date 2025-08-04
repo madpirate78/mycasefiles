@@ -25,7 +25,6 @@ interface ExtendedFile extends StoredFile {
 
 const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUpload, onFileDelete, onFileEdit, onFileUpdate, currentVault }) => {
   const [filter, setFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('date');
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingFileId, setDeletingFileId] = useState<number | null>(null);
   const [editingFile, setEditingFile] = useState<StoredFile | null>(null);
@@ -165,11 +164,19 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                     // Replace original PDF with searchable version if available
                     if (ocrResult.searchablePdf) {
                       console.log('📝 Replacing original PDF with searchable version');
+                      console.log('🔍 Searchable PDF size:', ocrResult.searchablePdf.byteLength, 'bytes');
+                      
                       const searchableBlob = new Blob([ocrResult.searchablePdf], { type: 'application/pdf' });
                       const searchableFile = new File([searchableBlob], file.name, { type: 'application/pdf' });
                       
                       // Update the file data with searchable PDF
                       file.data = searchableFile;
+                      console.log('✅ File data updated with searchable PDF in memory');
+                      
+                      // IMPORTANT: We need to update the file in the database with the searchable PDF
+                      // This will be done in the metadata update below
+                    } else {
+                      console.log('⚠️ No searchable PDF returned from OCR');
                     }
                   } else {
                     console.error(`❌ OCR failed for ${file.name}:`, ocrResult.error);
@@ -206,7 +213,9 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
               ocrPerformed: ocrPerformed,
               ocrText: ocrText || undefined,
               ocrConfidence: ocrConfidence,
-              ocrDate: ocrPerformed ? new Date().toISOString() : undefined
+              ocrDate: ocrPerformed ? new Date().toISOString() : undefined,
+              // IMPORTANT: Include the updated file data if OCR created a searchable PDF
+              data: file.data
             };
             
             // Step 5: Update the file
@@ -255,26 +264,27 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
       );
     }
 
-    // Sort files
+    // Sort files by date field if available, otherwise by added date (oldest first)
     files = [...files].sort((a, b) => {
-      switch (sortBy) {
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'type':
-          return a.type.localeCompare(b.type);
-        case 'section':
-          return (a.section || 'other').localeCompare(b.section || 'other');
-        case 'date':
-        default:
-          // Sort by added date (newest first)
-          const dateA = a.addedDate ? new Date(a.addedDate).getTime() : 0;
-          const dateB = b.addedDate ? new Date(b.addedDate).getTime() : 0;
-          return dateB - dateA;
+      // First priority: use the date field if both files have it
+      if (a.date && b.date) {
+        const dateA = new Date(a.date).getTime();
+        const dateB = new Date(b.date).getTime();
+        return dateA - dateB; // Oldest first
       }
+      
+      // If only one has a date field, prioritize it (but still oldest first)
+      if (a.date && !b.date) return -1;
+      if (!a.date && b.date) return 1;
+      
+      // Fallback to added date if neither has a date field
+      const addedDateA = a.addedDate ? new Date(a.addedDate).getTime() : 0;
+      const addedDateB = b.addedDate ? new Date(b.addedDate).getTime() : 0;
+      return addedDateA - addedDateB; // Oldest first
     });
 
     return files;
-  }, [uploadedFiles, filter, sortBy, searchQuery]);
+  }, [uploadedFiles, filter, searchQuery]);
 
   // Count files by section
   const sectionCounts = useMemo(() => {
@@ -330,16 +340,6 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             onChange={(e) => setSearchQuery(e.target.value)}
             className="vault-search"
           />
-          <select 
-            value={sortBy} 
-            onChange={(e) => setSortBy(e.target.value)}
-            className="sort-select"
-          >
-            <option value="date">Sort by Date</option>
-            <option value="name">Sort by Name</option>
-            <option value="type">Sort by Type</option>
-            <option value="section">Sort by Section</option>
-          </select>
           <button
             onClick={() => setShowOcrAllDialog(true)}
             disabled={isBatchProcessing || uploadedFiles.filter(f => f.type.includes('pdf')).length === 0}

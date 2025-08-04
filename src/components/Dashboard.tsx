@@ -213,18 +213,6 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQu
         </div>
       </div>
 
-      <div className="quick-actions">
-        <h3>Quick Actions</h3>
-        <button className="action-btn primary">
-          <span className="action-icon">➕</span>
-          Create New Bundle
-        </button>
-        <button className="action-btn">
-          <span className="action-icon">📧</span>
-          Import Emails
-        </button>
-      </div>
-
       <SimpleOrganizeModal
         file={selectedFile}
         isOpen={isPreviewOpen}

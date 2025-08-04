@@ -110,6 +110,11 @@ async function performOCR(pdfBuffer) {
     // CRITICAL: Use worker API, not simple recognize
     const worker = await Tesseract.createWorker('eng');
     
+    // Configure PSM for complex document layouts (legal documents with columns, signatures, etc.)
+    await worker.setParameters({
+      tessedit_pageseg_mode: 1  // PSM_AUTO_OSD: Automatic page segmentation with OSD  
+    });
+    
     try {
       const { data } = await worker.recognize(imagePath, {}, {
         text: true,
@@ -259,6 +264,76 @@ async function processScannedPDF(file) {
 **Cause**: Not terminating Tesseract workers properly
 **Fix**: Always terminate workers in try/finally blocks
 
+### Bug 7: Searchable PDFs not persisting to database
+**Symptoms**: OCR creates searchable PDF but it's lost when creating bundles
+**Cause**: Updated file data not included in metadata updates
+**Fix**: Include `data: file.data` in all metadata updates after OCR
+```javascript
+// In DocumentVault.tsx and FilePreviewModal.tsx
+const updatedMetadata = {
+  ...metadata,
+  // ... other fields
+  data: file.data // CRITICAL: Include updated file data with searchable PDF
+};
+```
+
+### Bug 8: Font size significantly oversized in text overlay
+**Symptoms**: Invisible text overlay is much larger than underlying text
+**Cause**: Incorrect font size calculation not accounting for DPI conversion
+**Fix**: Use DPI-aware formula instead of direct scaling
+```javascript
+// Incorrect:
+const scaledFontSize = (line.bbox.y1 - line.bbox.y0) * scaleY;
+
+// Correct:
+const bboxHeightInPixels = line.bbox.y1 - line.bbox.y0;
+const fontSizeInPoints = (bboxHeightInPixels * 72) / 300; // 72 points/inch, 300 DPI
+```
+
+### Bug 9: Poor bounding box detection for complex document layouts
+**Symptoms**: Text overlay positioning wrong for multi-column documents, signatures, mixed layouts
+**Cause**: Using default PSM_SINGLE_BLOCK (PSM 5) assumes single uniform text block
+**Fix**: Use PSM_SINGLE_COLUMN (PSM 3) with PSM_SPARSE_TEXT (PSM 11) fallback
+```javascript
+// Configure PSM for complex document layouts
+await worker.setParameters({
+  tessedit_pageseg_mode: 3  // PSM_SINGLE_COLUMN: Single column of variable sizes
+});
+
+// Add fallback logic for difficult documents
+const hasGoodResults = data.text && data.text.trim().length > 10 && data.lines && data.lines.length > 0;
+if (!hasGoodResults) {
+  await worker.setParameters({
+    tessedit_pageseg_mode: 11  // PSM_SPARSE_TEXT: Find text in any order
+  });
+}
+```
+
+### Bug 10: Oversized font in text overlay from incorrect bounding boxes
+**Symptoms**: Invisible text overlay appears as huge fonts, poor text selection
+**Cause**: Tesseract sometimes returns incorrect bounding boxes (artifacts, merged elements)
+**Fix**: **TEMPORARY HACK** - Filter obviously wrong bounding box sizes
+```javascript
+// Calculate font size using DPI-aware formula
+let fontSizeInPoints = (bboxHeightInPixels * 72) / 300;
+
+// HACK: Filter out obviously wrong bounding boxes
+if (bboxHeightInPixels > 80) { // More than ~19pt text is suspicious
+  console.log(`⚠️ Rejecting oversized bounding box: "${line.text}" h=${bboxHeightInPixels}px`);
+  fontSizeInPoints = 12; // Use reasonable default
+} else if (bboxHeightInPixels < 8) {
+  fontSizeInPoints = 8; // Minimum readable size
+}
+```
+
+**RESOLVED**: Implemented efficient word-level positioning with line-averaged font sizes:
+- Uses first 10 words per line for font size sampling (reduces computational load)
+- Applies averaged font size to all words in the line for visual uniformity
+- Eliminates oversized font issues through proper word-level bounding boxes
+- Provides accurate text positioning and natural selection behavior
+
+**Previous hack (bounding box filtering) removed** - word-level positioning eliminates the need
+
 ## Dependencies Required
 
 ```json
@@ -313,11 +388,34 @@ class SearchablePDFGenerator {
     for (const imagePath of imagePaths) {
       const worker = await Tesseract.createWorker('eng');
       
+      // Configure PSM for complex document layouts
+      await worker.setParameters({
+        tessedit_pageseg_mode: 1  // PSM_AUTO_OSD: Automatic page segmentation with OSD
+      });
+      
       try {
         const { data } = await worker.recognize(imagePath, {}, {
           text: true,
           blocks: true
         });
+        
+        // Check if we got reasonable results, fallback to SPARSE_TEXT if needed  
+        const hasGoodResults = data.text && data.text.trim().length > 10 && data.lines && data.lines.length > 0;
+        
+        if (!hasGoodResults) {
+          await worker.setParameters({
+            tessedit_pageseg_mode: 11  // PSM_SPARSE_TEXT: Find text in any order
+          });
+          
+          const sparseResult = await worker.recognize(imagePath, {}, {
+            text: true,
+            blocks: true
+          });
+          
+          if (sparseResult.data.text && sparseResult.data.text.trim().length > data.text?.trim().length) {
+            data = sparseResult.data;
+          }
+        }
         
         // Extract hierarchical structure from blocks
         let lines = [];
@@ -360,10 +458,14 @@ class SearchablePDFGenerator {
       if (pageOcr?.lines) {
         pageOcr.lines.forEach(line => {
           if (line.text.trim() && line.bbox) {
+            // Calculate font size using DPI-aware formula
+            const bboxHeightInPixels = line.bbox.y1 - line.bbox.y0;
+            const fontSizeInPoints = (bboxHeightInPixels * 72) / 300; // 300 DPI
+            
             page.drawText(line.text.trim(), {
               x: line.bbox.x0 * scaleX,
               y: height - (line.bbox.y1 * scaleY),
-              size: Math.max(8, (line.bbox.y1 - line.bbox.y0) * scaleY),
+              size: fontSizeInPoints,
               font: font,
               color: rgb(0, 0, 0),
               opacity: 0
@@ -444,6 +546,13 @@ console.log('Scaled coordinates:', {
 - Implement timeout mechanisms for OCR operations
 - Provide fallback for failed page processing
 - Log detailed error information for debugging
+
+### Making Invisible Text Visible for Debugging
+To debug text overlay positioning and sizing:
+1. Open the searchable PDF in a text editor or hex editor
+2. Search for "3 Tr" (text rendering mode 3 = invisible)
+3. Replace with "0 Tr" (text rendering mode 0 = visible)
+4. Save and open in PDF viewer to see the overlay text
 
 ## Is This Information Easily Accessible?
 

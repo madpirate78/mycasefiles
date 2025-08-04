@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, dialog, shell, globalShortcut } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_IS_DEV === 'true';
 
@@ -39,102 +39,104 @@ function createWindow() {
     mainWindow.webContents.openDevTools();
   }
 
-  // Create custom menu for legal document management
-  const menuTemplate = [
-    {
-      label: 'File',
-      submenu: [
-        {
-          label: 'Import Documents...',
-          accelerator: 'CmdOrCtrl+O',
-          click: () => {
-            // TODO: Implement file import dialog
-            mainWindow.webContents.send('menu-import-documents');
-          }
-        },
-        {
-          label: 'Export Case Bundle...',
-          accelerator: 'CmdOrCtrl+E',
-          click: () => {
-            // TODO: Implement bundle export
-            mainWindow.webContents.send('menu-export-bundle');
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Exit',
-          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-          click: () => {
-            app.quit();
-          }
-        }
-      ]
-    },
-    {
-      label: 'Documents',
-      submenu: [
-        {
-          label: 'Organize Document...',
-          accelerator: 'CmdOrCtrl+D',
-          click: () => {
-            mainWindow.webContents.send('menu-organize-document');
-          }
-        },
-        {
-          label: 'Search Documents...',
-          accelerator: 'CmdOrCtrl+F',
-          click: () => {
-            mainWindow.webContents.send('menu-search-documents');
-          }
-        }
-      ]
-    },
-    {
-      label: 'View',
-      submenu: [
-        { role: 'reload' },
-        { role: 'forceReload' },
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        { role: 'resetZoom' },
-        { role: 'zoomIn' },
-        { role: 'zoomOut' },
-        { type: 'separator' },
-        { role: 'togglefullscreen' }
-      ]
-    },
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'About My Case Files',
-          click: () => {
-            mainWindow.webContents.send('menu-about');
-          }
-        }
-      ]
-    }
-  ];
-
-  // Add developer menu in development
+  // Only show menu bar in development mode
   if (isDev) {
-    menuTemplate.push({
-      label: 'Developer',
-      submenu: [
-        { role: 'toggleDevTools' },
-        { type: 'separator' },
-        {
-          label: 'Test PDF Parser',
-          click: () => {
-            console.log('Testing PDF parser...');
+    // Create custom menu for legal document management
+    const menuTemplate = [
+      {
+        label: 'File',
+        submenu: [
+          {
+            label: 'Import Documents...',
+            accelerator: 'CmdOrCtrl+O',
+            click: () => {
+              // TODO: Implement file import dialog
+              mainWindow.webContents.send('menu-import-documents');
+            }
+          },
+          {
+            label: 'Export Case Bundle...',
+            accelerator: 'CmdOrCtrl+E',
+            click: () => {
+              // TODO: Implement bundle export
+              mainWindow.webContents.send('menu-export-bundle');
+            }
+          },
+          { type: 'separator' },
+          {
+            label: 'Exit',
+            accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
+            click: () => {
+              app.quit();
+            }
           }
-        }
-      ]
-    });
-  }
+        ]
+      },
+      {
+        label: 'Documents',
+        submenu: [
+          {
+            label: 'Organize Document...',
+            accelerator: 'CmdOrCtrl+D',
+            click: () => {
+              mainWindow.webContents.send('menu-organize-document');
+            }
+          },
+          {
+            label: 'Search Documents...',
+            accelerator: 'CmdOrCtrl+F',
+            click: () => {
+              mainWindow.webContents.send('menu-search-documents');
+            }
+          }
+        ]
+      },
+      {
+        label: 'View',
+        submenu: [
+          { role: 'reload' },
+          { role: 'forceReload' },
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          { role: 'resetZoom' },
+          { role: 'zoomIn' },
+          { role: 'zoomOut' },
+          { type: 'separator' },
+          { role: 'togglefullscreen' }
+        ]
+      },
+      {
+        label: 'Help',
+        submenu: [
+          {
+            label: 'About My Case Files',
+            click: () => {
+              mainWindow.webContents.send('menu-about');
+            }
+          }
+        ]
+      },
+      {
+        label: 'Developer',
+        submenu: [
+          { role: 'toggleDevTools' },
+          { type: 'separator' },
+          {
+            label: 'Test PDF Parser',
+            click: () => {
+              console.log('Testing PDF parser...');
+            }
+          }
+        ]
+      }
+    ];
 
-  const menu = Menu.buildFromTemplate(menuTemplate);
-  Menu.setApplicationMenu(menu);
+    const menu = Menu.buildFromTemplate(menuTemplate);
+    Menu.setApplicationMenu(menu);
+  } else {
+    // No menu in production
+    Menu.setApplicationMenu(null);
+  }
 
   // Open DevTools in development
   if (isDev) {
@@ -146,6 +148,14 @@ function createWindow() {
 app.whenReady().then(async () => {
   createWindow();
   
+  // Register global shortcuts
+  globalShortcut.register('CommandOrControl+Shift+I', () => {
+    const focusedWindow = BrowserWindow.getFocusedWindow();
+    if (focusedWindow) {
+      focusedWindow.webContents.toggleDevTools();
+    }
+  });
+  
   // App ready
   console.log('✅ Electron app initialized successfully');
 });
@@ -155,6 +165,11 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Unregister shortcuts before quitting
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on('activate', () => {
@@ -230,6 +245,13 @@ async function performOCROnPDF(pdfBuffer) {
     
     console.log(`📄 Found ${imagePaths.length} images from ${allFiles.length} total files`);
     
+    // Log image file details for debugging
+    for (let i = 0; i < imagePaths.length; i++) {
+      const imagePath = imagePaths[i];
+      const stats = fs.statSync(imagePath);
+      console.log(`📊 Image ${i + 1}: ${path.basename(imagePath)}, size: ${stats.size} bytes`);
+    }
+    
     if (imagePaths.length === 0) {
       throw new Error('No pages could be converted to images');
     }
@@ -243,15 +265,69 @@ async function performOCROnPDF(pdfBuffer) {
       try {
         // Capture full Tesseract.js data structure including lines, paragraphs, words
         // CRITICAL: v6 requires worker API for hierarchical structure output
-        const worker = await Tesseract.createWorker('eng');
-        let data;
+        // Try PSM_AUTO_OSD with legacy support first, fallback to PSM_SINGLE_COLUMN
+        let worker;
+        let fallbackToSingleColumn = false;
         
         try {
+          worker = await Tesseract.createWorker('eng', 1, {
+            legacyCore: true,
+            legacyLang: true  // Required for OSD functionality
+          });
+          
+          // Configure PSM for complex document layouts (legal documents with columns, signatures, etc.)
+          await worker.setParameters({
+            tessedit_pageseg_mode: 1,  // PSM_AUTO_OSD: Automatic page segmentation with OSD
+            user_defined_dpi: options.resolutionXYAxis || 300  // Use actual requested DPI
+          });
+        } catch (legacyError) {
+          console.log(`⚠️ Page ${i + 1}: Legacy worker failed, falling back to PSM_SINGLE_COLUMN`);
+          fallbackToSingleColumn = true;
+          
+          worker = await Tesseract.createWorker('eng');
+          await worker.setParameters({
+            tessedit_pageseg_mode: 3,  // PSM_SINGLE_COLUMN: Single column of variable sizes
+            user_defined_dpi: options.resolutionXYAxis || 300  // Use actual requested DPI
+          });
+        }
+        
+        let data;
+        let usedPSM = fallbackToSingleColumn ? 3 : 1;
+        
+        try {
+          const psmMode = fallbackToSingleColumn ? 'PSM_SINGLE_COLUMN (3)' : 'PSM_AUTO_OSD (1) + legacy support';
+          // Reduced logging - only show critical info
           const result = await worker.recognize(imagePath, {}, {
             text: true,
             blocks: true  // Enable hierarchical data structure (lines, paragraphs, words)
           });
           data = result.data;
+          
+          // Check if we got reasonable results - if text is very short or no lines detected, try SPARSE_TEXT
+          const hasGoodResults = data.text && data.text.trim().length > 10 && data.lines && data.lines.length > 0;
+          
+          if (!hasGoodResults) {
+            const currentMode = fallbackToSingleColumn ? 'PSM_SINGLE_COLUMN' : 'PSM_AUTO_OSD';
+            // Fallback to sparse text mode silently
+            
+            await worker.setParameters({
+              tessedit_pageseg_mode: 11,  // PSM_SPARSE_TEXT: Find text in any order
+              user_defined_dpi: options.resolutionXYAxis || 300  // Use actual requested DPI
+            });
+            
+            const sparseResult = await worker.recognize(imagePath, {}, {
+              text: true,
+              blocks: true
+            });
+            
+            // Use sparse results if they're better
+            if (sparseResult.data.text && sparseResult.data.text.trim().length > data.text?.trim().length) {
+              data = sparseResult.data;
+              usedPSM = 11;
+            }
+          } else {
+            // Good results - no logging needed
+          }
           
           await worker.terminate();
         } catch (workerError) {
@@ -336,11 +412,11 @@ async function performOCROnPDF(pdfBuffer) {
             }
           });
           
-          console.log(`✅ Page ${i + 1}: Extracted ${pageLines.length} lines, ${pageParagraphs.length} paragraphs, ${pageWords.length} words from blocks hierarchy`);
+          // Successfully extracted hierarchical data
         }
         
-        console.log(`✅ Page ${i + 1}: ${pageConfidence.toFixed(1)}% confidence, ${pageText.length} chars`);
-        console.log(`📄 Page ${i + 1}: ${pageLines.length} lines, ${pageParagraphs.length} paragraphs, ${pageWords.length} words`);
+        // Per-page logging removed - see summary at end
+        // Page OCR results ready
         
         fullText += pageText + '\n\n';
         ocrResults.push({ 
@@ -351,7 +427,9 @@ async function performOCROnPDF(pdfBuffer) {
           lines: pageLines,
           paragraphs: pageParagraphs,
           words: pageWords,
-          blocks: pageBlocks
+          blocks: pageBlocks,
+          usedPSM: usedPSM,  // Track which PSM mode was used
+          actualDPI: options.resolutionXYAxis || 300  // Store actual DPI for font calculations
         });
         
         // Clean up temporary image file
@@ -389,16 +467,44 @@ async function performOCROnPDF(pdfBuffer) {
       ? validResults.reduce((sum, r) => sum + r.confidence, 0) / validResults.length 
       : 0;
     
-    console.log(`🎉 OCR completed: ${fullText.length} chars, ${avgConfidence.toFixed(1)}% confidence`);
+    // Log DPI-relevant summary only
+    const psmModes = ocrResults
+      .filter(r => r.usedPSM)
+      .map(r => `PSM${r.usedPSM}`)
+      .join(',');
+    
+    // Compact summary for batch processing
+    const dpiIssues = ocrResults.filter(r => r.usedPSM === 11).length; // PSM11 indicates potential DPI issues
+    const summary = `✅ ${ocrResults.length}p|${avgConfidence.toFixed(0)}%|PSM:${psmModes}${dpiIssues > 0 ? `|⚠️DPI:${dpiIssues}` : ''}`;
+    console.log(summary);
     
     // Create searchable PDF with invisible text layers
-    console.log('📝 Creating searchable PDF with text overlay...');
+    // Creating searchable PDF with text overlay
     
-    // Get image dimensions from poppler conversion options or use defaults
-    const imageDimensions = { 
-      width: options.resolutionXYAxis * 8.5,  // Approximate A4 width at 300 DPI
-      height: options.resolutionXYAxis * 11   // Approximate A4 height at 300 DPI  
-    };
+    // Get ACTUAL image dimensions from the first generated image
+    const sharp = require('sharp');
+    let imageDimensions;
+    
+    try {
+      if (imagePaths.length > 0) {
+        const firstImageMetadata = await sharp(imagePaths[0]).metadata();
+        imageDimensions = {
+          width: firstImageMetadata.width,
+          height: firstImageMetadata.height,
+          actualDPI: firstImageMetadata.density || options.resolutionXYAxis
+        };
+        console.log(`📏 Actual: ${imageDimensions.width}x${imageDimensions.height}px @ ${imageDimensions.actualDPI}DPI`);
+      } else {
+        throw new Error('No images available');
+      }
+    } catch (error) {
+      console.log('⚠️ Using DPI approximation');
+      imageDimensions = { 
+        width: options.resolutionXYAxis * 8.5,  // Fallback
+        height: options.resolutionXYAxis * 11,
+        actualDPI: options.resolutionXYAxis
+      };
+    }
     
     const searchablePdfBuffer = await createSearchablePDF(pdfBuffer, ocrResults, imageDimensions);
     
@@ -468,7 +574,7 @@ async function createSearchablePDF(originalPdfBuffer, ocrResults, imageDimension
     const newPdf = await PDFDocument.create();
     const helvetica = await newPdf.embedFont(StandardFonts.Helvetica);
     
-    console.log(`📄 Processing ${originalPdf.getPageCount()} pages for text overlay...`);
+    // Processing pages for text overlay
     
     for (let pageIndex = 0; pageIndex < originalPdf.getPageCount(); pageIndex++) {
       // Copy original page
@@ -476,43 +582,156 @@ async function createSearchablePDF(originalPdfBuffer, ocrResults, imageDimension
       newPdf.addPage(copiedPage);
       
       const { width: pdfWidth, height: pdfHeight } = copiedPage.getSize();
-      console.log(`📐 Page ${pageIndex + 1}: PDF dimensions ${pdfWidth}x${pdfHeight}, Image dimensions ${imageDimensions.width}x${imageDimensions.height}`);
-      
-      // Calculate scaling factors
+      // Calculate scaling factors from image coordinates to PDF coordinates
       const scaleX = pdfWidth / imageDimensions.width;
       const scaleY = pdfHeight / imageDimensions.height;
       
       // Get OCR data for this page
       const pageOcr = ocrResults[pageIndex];
       if (pageOcr && pageOcr.lines) {
-        console.log(`📝 Adding ${pageOcr.lines.length} text lines to page ${pageIndex + 1}...`);
+        // Adding text lines to page
         
-        // Add invisible text using Tesseract's line groupings for natural selection
-        pageOcr.lines.forEach((line, lineIndex) => {
+        // DEBUG: Check if we have word-level data for comparison
+        const totalWords = pageOcr.lines.reduce((count, line) => {
+          return count + (line.words ? line.words.length : 0);
+        }, 0);
+        // Line and word counts calculated
+        
+        // DEBUG: Investigate word-level data structure
+        if (pageOcr.lines.length > 0) {
+          const firstLine = pageOcr.lines[0];
+          // First line structure checked
+        }
+        
+        // EXPERIMENTAL: Try word-level positioning if available, fallback to line-level
+        const useWordLevel = pageOcr.lines.some(line => line.words && line.words.length > 0);
+        // Positioning mode determined
+        
+        if (useWordLevel) {
+          // Use word-level bounding boxes with paragraph-averaged font sizes
+          let wordCount = 0;
+          
+          // First pass: Calculate average font size per line using first 10 words for efficiency
+          pageOcr.lines.forEach((line, lineIndex) => {
+            if (line.words && line.words.length > 0) {
+              // Use Tesseract's confidence data to filter reliable word measurements
+              const reliableWords = line.words
+                .filter(word => word.text.trim().length > 0 && word.bbox && (word.confidence || 0) > 70)
+                .slice(0, 10); // Sample first 10 high-confidence words
+              
+              // Fallback to all words if no high-confidence words found
+              const sampleWords = reliableWords.length > 3 ? reliableWords : 
+                line.words.filter(word => word.text.trim().length > 0 && word.bbox).slice(0, 10);
+              
+              const wordFontSizes = sampleWords.map(word => {
+                const bboxHeightInPixels = word.bbox.y1 - word.bbox.y0;
+                const actualDPI = pageOcr.actualDPI || 300;
+                let fontSizeInPoints = (bboxHeightInPixels * 72) / actualDPI;  // Use actual DPI
+                
+                // Use Tesseract's confidence to weight outlier filtering
+                const confidence = word.confidence || 50;
+                const isHighConfidence = confidence > 80;
+                
+                // Be more lenient with outlier filtering for high-confidence words
+                if (!isHighConfidence && bboxHeightInPixels > 60) {
+                  fontSizeInPoints = 12;
+                } else if (bboxHeightInPixels > 100) { // Extreme outliers regardless of confidence
+                  fontSizeInPoints = 12;
+                } else if (bboxHeightInPixels < 4) {
+                  fontSizeInPoints = 8;
+                }
+                
+                return fontSizeInPoints;
+              });
+              
+              // Calculate average font size for this line using sample
+              const avgFontSize = wordFontSizes.length > 0 
+                ? wordFontSizes.reduce((sum, size) => sum + size, 0) / wordFontSizes.length
+                : 10; // fallback
+              
+              // Store average font size on the line object for second pass
+              line._avgFontSize = Math.max(6, Math.min(18, avgFontSize)); // Clamp between 6-18pt
+              
+              // Line font averaging complete
+            }
+          });
+          
+          // Second pass: Apply averaged font sizes to all words
+          pageOcr.lines.forEach((line, lineIndex) => {
+            if (line.words && line.words.length > 0 && line._avgFontSize) {
+              line.words.forEach((word, wordIndex) => {
+                if (word.text.trim().length > 0 && word.bbox) {
+                  const scaledX = word.bbox.x0 * scaleX;
+                  const centerY = (word.bbox.y0 + word.bbox.y1) / 2;
+                  const scaledY = pdfHeight - (centerY * scaleY);
+                  
+                  // Use the line's average font size for all words in this line
+                  const fontSizeInPoints = line._avgFontSize;
+                  
+                  copiedPage.drawText(word.text.trim(), {
+                    x: scaledX,
+                    y: scaledY,
+                    size: fontSizeInPoints,
+                    font: helvetica,
+                    color: rgb(0, 0, 0),
+                    opacity: 0,
+                  });
+                  
+                  // Word positioned with line-averaged font size
+                  wordCount++;
+                }
+              });
+            }
+          });
+          // Word-level overlay complete
+        } else {
+          // Fallback to line-level positioning (existing code)
+          // Using line-level positioning fallback
+        }
+        
+        // Add invisible text using Tesseract's line groupings for natural selection (only if not using word-level)
+        if (!useWordLevel) {
+          pageOcr.lines.forEach((line, lineIndex) => {
           if (line.text.trim().length > 0 && line.bbox) {
             const scaledX = line.bbox.x0 * scaleX;
-            const scaledY = pdfHeight - (line.bbox.y1 * scaleY); // PDF coords are bottom-up
-            const scaledFontSize = Math.max(8, (line.bbox.y1 - line.bbox.y0) * scaleY); // Minimum 8pt font
+            // Try using the center of the bounding box for better positioning
+            const centerY = (line.bbox.y0 + line.bbox.y1) / 2;
+            const scaledY = pdfHeight - (centerY * scaleY); // PDF coords are bottom-up, use center
+            
+            // Calculate font size using DPI-aware formula
+            // Font size in points = (height in pixels * 72 points per inch) / DPI
+            const bboxHeightInPixels = line.bbox.y1 - line.bbox.y0;
+            
+            // Filter out obviously wrong bounding boxes (likely artifacts or merged elements)
+            // Normal text lines should be 8-30px high at 300 DPI (6-24pt font)
+            let fontSizeInPoints = (bboxHeightInPixels * 72) / 300;
+            
+            if (bboxHeightInPixels > 80) { // More than ~19pt text is suspicious
+              console.log(`⚠️ Rejecting oversized bounding box: "${line.text.trim()}" h=${bboxHeightInPixels}px (would be ${fontSizeInPoints.toFixed(1)}pt)`);
+              fontSizeInPoints = 12; // Use reasonable default size
+            } else if (bboxHeightInPixels < 8) { // Less than ~2pt text is also suspicious  
+              fontSizeInPoints = 8; // Minimum readable size
+            }
             
             copiedPage.drawText(line.text.trim(), {
               x: scaledX,
               y: scaledY,
-              size: scaledFontSize,
+              size: fontSizeInPoints,
               font: helvetica,
               color: rgb(0, 0, 0),
               opacity: 0, // Invisible but selectable
             });
             
-            if (lineIndex < 3) { // Log first few lines for debugging
-              console.log(`  Line ${lineIndex + 1}: "${line.text.trim()}" at (${scaledX.toFixed(1)}, ${scaledY.toFixed(1)}) size ${scaledFontSize.toFixed(1)}`);
-            }
+            // Line processed
           }
-        });
+          });
+        } // End of !useWordLevel
       }
     }
     
-    console.log('✅ Searchable PDF created successfully');
-    return await newPdf.save();
+    const searchablePdfBytes = await newPdf.save();
+    // Searchable PDF created successfully
+    return searchablePdfBytes;
     
   } catch (error) {
     console.error('❌ Failed to create searchable PDF:', error);
@@ -523,12 +742,12 @@ async function createSearchablePDF(originalPdfBuffer, ocrResults, imageDimension
 
 ipcMain.handle('ocr-pdf', async (event, pdfBuffer) => {
   try {
-    console.log('🔍 Manual OCR requested for PDF buffer of size:', pdfBuffer.length);
+    // Manual OCR requested
     
     const ocrResult = await performOCROnPDF(pdfBuffer);
     
     if (ocrResult.success) {
-      console.log(`✅ Manual OCR completed: ${ocrResult.text.length} chars, ${ocrResult.confidence.toFixed(1)}% confidence`);
+      // Manual OCR completed
       return {
         success: true,
         text: ocrResult.text,
@@ -712,14 +931,15 @@ async function createBundleIndex(pdfDoc, bundleData) {
     }
   };
   
-  // Use actual page numbers from bundle data
+  // Track actual page numbers as they'll be in the final PDF
   const frontPageCount = 2; // Cover page + index page(s)
+  let actualPageNumber = frontPageCount + 1; // Start counting after front matter
   
   for (const section of bundleData.sections) {
     if (!section.documentCount) continue;
     
-    // Calculate actual section page (section start page + front pages)
-    const sectionPageRef = section.startPage + frontPageCount;
+    // Section divider will be at the current actual page number
+    const sectionPageRef = actualPageNumber;
     pageReferences.set(`section_${section.id}`, sectionPageRef);
     
     // Section header (e.g., "A. Chronology")
@@ -751,6 +971,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
     drawDottedLine(margin + labelWidth + 10, pageNumX - 10, yPosition + 3, indexPage);
     drawLeftText(pageNumStr, helvetica, 12, yPosition, pageNumX, indexPage);
     
+    actualPageNumber++; // Move past section divider page
     yPosition -= 20;
     
     // Get documents for this section
@@ -770,8 +991,8 @@ async function createBundleIndex(pdfDoc, bundleData) {
         yPosition -= 30;
       }
       
-      // Store document page reference using actual bundle pagination
-      const docPageRef = doc.bundleStartPage + frontPageCount;
+      // Document will start at current actual page number
+      const docPageRef = actualPageNumber;
       pageReferences.set(`doc_${doc.id}`, docPageRef);
       
       // Document entry with subsection numbering (e.g., "B.1 Enforcement Application dated 23 April 2025")
@@ -813,6 +1034,16 @@ async function createBundleIndex(pdfDoc, bundleData) {
       
       drawDottedLine(indentX + docLabelWidth + 10, docPageX - 10, yPosition + 3, indexPage);
       drawLeftText(docPageStr, helvetica, 11, yPosition, docPageX, indexPage);
+      
+      // Calculate how many pages this document will take up
+      let docPageCount = 1; // Default to 1 page
+      if (doc.selectedPages && doc.selectedPages.length > 0) {
+        docPageCount = doc.selectedPages.length;
+      } else if (doc.totalPages && doc.totalPages > 0) {
+        docPageCount = doc.totalPages;
+      }
+      
+      actualPageNumber += docPageCount; // Move past document pages
       
       yPosition -= 18;
       docIndex++;

@@ -156,7 +156,9 @@ function App() {
         ocrPerformed: metadata.ocrPerformed,
         ocrText: metadata.ocrText as string | undefined,
         ocrConfidence: metadata.ocrConfidence,
-        ocrDate: metadata.ocrDate as string | undefined
+        ocrDate: metadata.ocrDate as string | undefined,
+        // Include updated file data if present (e.g., searchable PDF after OCR)
+        ...((metadata as any).data ? { data: (metadata as any).data } : {})
       });
       fetchFilesFromDB(); // Refresh the files list
     } catch (error) {
@@ -367,27 +369,23 @@ function App() {
           currentVault={currentVault}
           onVaultChange={handleVaultChange}
         />
-        <input 
-          type="search" 
-          placeholder="Search documents..." 
-          className="search-bar"
-        />
-        <button 
-          className="settings-btn"
-          onClick={() => setCurrentView('settings')}
-        >
-          ⚙️
-        </button>
       </header>
 
       <div className="app-body">
         <nav className="sidebar">
           <button 
+            className={`nav-btn ${currentView === 'settings' ? 'active' : ''}`}
+            onClick={() => setCurrentView('settings')}
+          >
+            <span className="nav-icon">⚙️</span>
+            <span className="nav-label">Case Settings</span>
+          </button>
+          <button 
             className={`nav-btn ${currentView === 'home' ? 'active' : ''}`}
             onClick={() => setCurrentView('home')}
           >
-            <span className="nav-icon">🏠</span>
-            <span className="nav-label">Home</span>
+            <span className="nav-icon">📥</span>
+            <span className="nav-label">Import Documents</span>
           </button>
           <button 
             className={`nav-btn ${currentView === 'documents' ? 'active' : ''}`}
@@ -402,13 +400,6 @@ function App() {
           >
             <span className="nav-icon">📁</span>
             <span className="nav-label">Bundles</span>
-          </button>
-          <button 
-            className={`nav-btn ${currentView === 'settings' ? 'active' : ''}`}
-            onClick={() => setCurrentView('settings')}
-          >
-            <span className="nav-icon">⚙️</span>
-            <span className="nav-label">Case Settings</span>
           </button>
           <div className="nav-separator"></div>
           <button 
