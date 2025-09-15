@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="153.24045"
+   height="81.816002"
+   viewBox="0 0 40.54487 21.647147"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4 (86a8ad7, 2024-10-11)"
+   sodipodi:docname="logo-no-slogan-tight.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="false"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="true"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showborder="false"
+     borderlayer="false"
+     inkscape:antialias-rendering="true"
+     inkscape:zoom="1.0167041"
+     inkscape:cx="32.949606"
+     inkscape:cy="112.6188"
+     inkscape:window-width="1174"
+     inkscape:window-height="993"
+     inkscape:window-x="730"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-36.923482,-14.725062)">
+    <g
+       id="g1"
+       transform="translate(7.4271045,2.1166034)">
+      <path
+         style="font-weight:bold;font-size:25.4px;font-family:Oswald;-inkscape-font-specification:'Oswald Bold';fill:#ff6b35;fill-opacity:1;stroke:#ff6b35;stroke-width:0.79375;stroke-dasharray:none;stroke-opacity:1"
+         d="m 60.754371,33.858734 v -20.574 h 8.89 v 3.0734 h -4.3434 v 5.1816 h 3.7846 v 3.175 h -3.7846 v 9.144 z"
+         id="path3" />
+      <g
+         id="g3">
+        <g
+           id="g5">
+          <g
+             id="g4">
+            <path
+               style="font-weight:bold;font-size:25.4px;font-family:Oswald;-inkscape-font-specification:'Oswald Bold';fill:#94a3b8;fill-opacity:1;stroke:#94a3b8;stroke-width:0.79375;stroke-dasharray:none;stroke-opacity:1"
+               d="m 50.111775,33.858734 v -3.937 h 4.0132 v 3.937 z"
+               id="path2" />
+            <path
+               style="font-weight:bold;font-size:25.4px;font-family:Oswald;-inkscape-font-specification:'Oswald Bold';fill:#94a3b8;fill-opacity:1;stroke:#94a3b8;stroke-width:0.79375;stroke-dasharray:none;stroke-opacity:1"
+               d="m 50.238775,28.448534 v -3.2766 q 1.143,-0.889 2.032,-1.9812 0.9144,-1.0922 1.4478,-2.3114 0.5334,-1.2446 0.5334,-2.5654 0,-0.9398 -0.3556,-1.3462 -0.3302,-0.4318 -0.9906,-0.4318 -0.5842,0 -0.9398,0.3556 -0.3556,0.3556 -0.3556,0.9906 0,0.4064 0.0762,0.7366 0.1016,0.3048 0.2286,0.6604 l -3.7338,0.8636 q -0.2032,-0.6096 -0.3302,-1.1684 -0.1016,-0.5842 -0.1016,-1.2192 0,-2.2352 1.3462,-3.4798 1.3716,-1.27 3.9116,-1.27 2.5654,0 3.937,1.3462 1.397,1.3462 1.397,3.8354 0,1.524 -0.508,2.8956 -0.508,1.3716 -1.4986,2.5908 -0.9652,1.2192 -2.3622,2.286 v 2.4892 z"
+               id="path1" />
+          </g>
+        </g>
+      </g>
+      <path
+         style="font-weight:bold;font-size:25.4px;font-family:Oswald;-inkscape-font-specification:'Oswald Bold';fill:#ff6b35;fill-opacity:1;stroke:#ff6b35;stroke-width:0.79375;stroke-dasharray:none;stroke-opacity:1"
+         d="m 32.433364,33.858734 -2.4892,-20.574 h 3.8608 l 1.2192,11.9888 1.5494,-11.9634 h 3.0226 l 1.6256,11.8872 1.2446,-11.9126 h 3.809999 l -2.463799,20.574 h -3.9624 l -1.7526,-12.4206 -1.651,12.4206 z"
+         id="text1" />
+    </g>
+  </g>
+</svg>
