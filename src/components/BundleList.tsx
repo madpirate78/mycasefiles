@@ -332,11 +332,6 @@ const BundleList: React.FC<BundleListProps> = ({ uploadedFiles }) => {
         </div>
       )}
 
-      <div className="pro-upgrade-banner">
-        <h4>Remove watermarks with Professional</h4>
-        <p>Upgrade to create clean, professional bundles without watermarks</p>
-        <button className="btn secondary">Learn More</button>
-      </div>
 
       {/* Create Bundle Modal */}
       {showCreateModal && (

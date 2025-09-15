@@ -352,18 +352,17 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
       </div>
 
       <div className="vault-layout">
-        <aside className="filter-sidebar">
+        <aside className="vault-sidebar">
           <h3>Bundle Sections</h3>
-          <p className="section-hint">Documents are organized by court bundle sections</p>
           {categories.map((cat) => (
             <button
               key={cat.id}
-              className={`filter-btn ${filter === cat.id ? 'active' : ''} ${cat.important ? 'important' : ''}`}
+              className={`nav-btn ${filter === cat.id ? 'active' : ''}`}
               onClick={() => setFilter(cat.id)}
             >
-              <span className="filter-icon">{cat.icon}</span>
-              <span className="filter-label">{cat.label}</span>
-              <span className="filter-count">{sectionCounts[cat.id] || 0}</span>
+              <span className="nav-icon">{cat.icon}</span>
+              <span className="nav-label">{cat.label}</span>
+              <span className="nav-count">{sectionCounts[cat.id] || 0}</span>
             </button>
           ))}
         </aside>
