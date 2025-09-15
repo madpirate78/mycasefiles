@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Case, CaseType } from '../types/case';
 import caseService from '../services/caseService';
-import './CaseManager.css';
 
 interface CaseManagerProps {
   onCaseSelect: (caseId: string) => void;

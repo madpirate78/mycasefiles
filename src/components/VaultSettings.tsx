@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { VaultType, VaultSettings as VaultSettingsType } from '../types/vault';
 import vaultService from '../services/vaultService';
-import './VaultSettings.css';
 
 interface VaultSettingsProps {
   vaultType: VaultType;

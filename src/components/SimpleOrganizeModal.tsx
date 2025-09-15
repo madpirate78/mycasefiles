@@ -4,7 +4,6 @@ import ElectronPDFRenderer from './ElectronPDFRenderer';
 import { getSuggestedSection, detectVaultType } from '../services/documentParser';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
-import './SimpleOrganizeModal.css';
 
 interface SimpleOrganizeModalProps {
   file: StoredFile | null;

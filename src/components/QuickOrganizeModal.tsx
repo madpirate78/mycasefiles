@@ -3,7 +3,6 @@ import { StoredFile } from '../services/indexedDBService';
 import { getSuggestedSection, detectVaultType } from '../services/documentParser';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
-import './QuickOrganizeModal.css';
 
 interface QuickOrganizeModalProps {
   file: StoredFile | null;

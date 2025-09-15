@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { VaultType } from '../types/vault';
 import folderImportService from '../services/folderImportService';
 import vaultService from '../services/vaultService';
-import './FolderImportWizard.css';
 
 interface FolderImportWizardProps {
   currentVault: VaultType;
