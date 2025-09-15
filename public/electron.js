@@ -12,6 +12,12 @@ const os = require('os');
 const crypto = require('crypto');
 const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 
+// Import resource monitoring
+const ResourceMonitor = require('./services/resourceMonitor');
+
+// Initialize resource monitor
+let resourceMonitor;
+
 function createWindow() {
   // Create the browser window
   const mainWindow = new BrowserWindow({
@@ -146,6 +152,9 @@ function createWindow() {
 
 // This method will be called when Electron has finished initialization
 app.whenReady().then(async () => {
+  // Initialize resource monitoring
+  resourceMonitor = new ResourceMonitor();
+  
   createWindow();
   
   // Register global shortcuts
@@ -170,6 +179,11 @@ app.on('window-all-closed', () => {
 // Unregister shortcuts before quitting
 app.on('will-quit', () => {
   globalShortcut.unregisterAll();
+  
+  // Stop resource monitoring
+  if (resourceMonitor) {
+    resourceMonitor.stopMonitoring();
+  }
 });
 
 app.on('activate', () => {
@@ -192,8 +206,21 @@ function isScannedPDF(text, info) {
 
 // Helper function to perform OCR on PDF pages
 async function performOCROnPDF(pdfBuffer) {
+  let operationId;
+  
   try {
     console.log('🔍 Starting OCR processing...');
+    
+    // Check resource limits before starting
+    const fileSizeMB = pdfBuffer.byteLength / (1024 * 1024);
+    if (fileSizeMB > 50) { // 50MB limit
+      throw new Error(`PDF file too large for OCR: ${fileSizeMB.toFixed(2)}MB (limit: 50MB)`);
+    }
+    
+    // Start resource monitoring for this operation
+    operationId = resourceMonitor.startOperation('ocr', {
+      fileSizeMB: fileSizeMB.toFixed(2)
+    });
     
     // Create temporary directory for images
     const tempDir = path.join(os.tmpdir(), 'mycasefiles-ocr-' + crypto.randomBytes(8).toString('hex'));
@@ -211,7 +238,7 @@ async function performOCROnPDF(pdfBuffer) {
     
     const options = {
       firstPageToConvert: 1,
-      lastPageToConvert: 3,  // Process only first 3 pages
+      lastPageToConvert: Math.min(3, resourceMonitor.limits.OCR.MAX_PAGES_PER_DOCUMENT),  // Respect resource limits
       pngFile: true,         // Output as PNG
       resolutionXYAxis: 300, // 300 DPI for good OCR quality
     };
@@ -508,6 +535,15 @@ async function performOCROnPDF(pdfBuffer) {
     
     const searchablePdfBuffer = await createSearchablePDF(pdfBuffer, ocrResults, imageDimensions);
     
+    // OCR completed successfully
+    if (operationId) {
+      resourceMonitor.finishOperation(operationId, { 
+        success: true, 
+        confidence: avgConfidence,
+        pageCount: ocrResults.length 
+      });
+    }
+    
     return {
       success: true,
       text: fullText.trim(),
@@ -519,6 +555,15 @@ async function performOCROnPDF(pdfBuffer) {
     
   } catch (error) {
     console.error('💥 OCR processing failed:', error);
+    
+    // Mark operation as failed
+    if (operationId) {
+      resourceMonitor.finishOperation(operationId, { 
+        success: false, 
+        error: error.message 
+      });
+    }
+    
     return {
       success: false,
       error: error.message,
@@ -529,7 +574,17 @@ async function performOCROnPDF(pdfBuffer) {
 
 // IPC handler for PDF parsing with OCR fallback
 ipcMain.handle('parse-pdf', async (event, pdfBuffer) => {
+  let operationId;
+  
   try {
+    // Start resource monitoring for PDF parsing
+    const fileSizeMB = pdfBuffer.byteLength / (1024 * 1024);
+    operationId = resourceMonitor.startOperation('pdf', {
+      fileSizeMB: fileSizeMB.toFixed(2)
+    });
+    
+    // Validate file size
+    resourceMonitor.validateFileOperation(null, 'pdf'); // Size already checked above
     const options = {
       normalizeWhitespace: true,
       disableCombineTextItems: false,
@@ -545,6 +600,16 @@ ipcMain.handle('parse-pdf', async (event, pdfBuffer) => {
       console.log('🔍 Scanned PDF detected - manual OCR available');
     }
     
+    // PDF parsing completed successfully
+    if (operationId) {
+      resourceMonitor.finishOperation(operationId, { 
+        success: true,
+        pageCount: data.numpages,
+        textLength: data.text.length,
+        isScanned
+      });
+    }
+    
     // Return standard PDF extraction result
     return {
       success: true,
@@ -557,10 +622,33 @@ ipcMain.handle('parse-pdf', async (event, pdfBuffer) => {
     
   } catch (error) {
     console.error('PDF parsing failed:', error);
+    
+    // Mark operation as failed
+    if (operationId) {
+      resourceMonitor.finishOperation(operationId, { 
+        success: false,
+        error: error.message
+      });
+    }
+    
     return {
       success: false,
       error: error.message
     };
+  }
+});
+
+// IPC handler for resource statistics
+ipcMain.handle('get-resource-stats', async () => {
+  if (!resourceMonitor) {
+    return { error: 'Resource monitor not initialized' };
+  }
+  
+  try {
+    return resourceMonitor.getResourceStats();
+  } catch (error) {
+    console.error('Error getting resource stats:', error);
+    return { error: error.message };
   }
 });
 

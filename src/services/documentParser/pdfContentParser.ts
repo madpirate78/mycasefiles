@@ -1,4 +1,5 @@
 import { CourtDocumentData } from './types';
+import { SafeRegexService } from '../safeRegexService';
 
 
 export class PDFContentParser {
@@ -239,19 +240,30 @@ export class PDFContentParser {
    * Extract case number with improved patterns using multi-pattern approach
    */
   private extractCaseNumber(text: string): string | null {
-    // Try each pattern in order of specificity
-    for (let i = 0; i < this.patterns.caseNumber.length; i++) {
-      const pattern = this.patterns.caseNumber[i];
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        const caseNum = match[1].trim().toUpperCase();
-        // Validate it looks like a UK court reference
-        if (this.isValidCaseNumber(caseNum)) {
-          console.log('✅ Case number extracted:', caseNum);
-          return caseNum;
-        }
+    // Sanitize input text
+    const sanitizedText = SafeRegexService.sanitizeInput(text, 5000); // Limit to first 5KB for case number extraction
+    
+    // Use safe multi-pattern matching with timeout protection
+    const result = SafeRegexService.safeMultiMatchSync(
+      this.patterns.caseNumber, 
+      sanitizedText, 
+      2000 // 2 second timeout for case number extraction
+    );
+    
+    if (result.timedOut) {
+      console.warn('⚠️ Case number extraction timed out');
+      return null;
+    }
+    
+    if (result.match && result.match[1]) {
+      const caseNum = result.match[1].trim().toUpperCase();
+      // Validate it looks like a UK court reference
+      if (this.isValidCaseNumber(caseNum)) {
+        console.log('✅ Case number extracted:', caseNum, `(pattern ${result.patternIndex})`);
+        return caseNum;
       }
     }
+    
     return null;
   }
 
@@ -259,6 +271,10 @@ export class PDFContentParser {
    * Validate case number format
    */
   private isValidCaseNumber(caseNum: string): boolean {
+    if (!caseNum || caseNum.length < 6) {
+      return false;
+    }
+    
     // UK Family Court patterns
     const validPatterns = [
       /^[A-Z]{2}\d{2}[A-Z]\d{5}$/,  // AB12C34567
@@ -266,7 +282,14 @@ export class PDFContentParser {
       /^[A-Z]{1,3}\d{2,4}[A-Z]?\d{3,6}$/  // broader
     ];
     
-    return validPatterns.some(pattern => pattern.test(caseNum)) && caseNum.length >= 6;
+    return validPatterns.some(pattern => {
+      try {
+        return pattern.test(caseNum);
+      } catch (error) {
+        console.warn('⚠️ Case number validation error:', error);
+        return false;
+      }
+    });
   }
 
   /**
@@ -302,35 +325,48 @@ export class PDFContentParser {
       /((?:HHJ|DJ|DDJ|Recorder|Circuit\s+Judge)\s+[A-Z][a-z]+)/i
     ];
 
-    // First try the first page (most common location)
-    for (const pattern of judgePatterns) {
-      const match = firstPageText.match(pattern);
-      if (match && match[1]) {
-        const judgeName = this.cleanJudgeName(match[1].trim());
-        console.log('👨‍⚖️ Judge found in first page:', judgeName);
-        return judgeName;
-      }
+    // First try the first page (most common location) using safe regex
+    const firstPageResult = SafeRegexService.safeMultiMatchSync(
+      judgePatterns, 
+      SafeRegexService.sanitizeInput(firstPageText), 
+      1500 // 1.5 second timeout
+    );
+    
+    if (!firstPageResult.timedOut && firstPageResult.match && firstPageResult.match[1]) {
+      const judgeName = this.cleanJudgeName(firstPageResult.match[1].trim());
+      console.log('👨‍⚖️ Judge found in first page:', judgeName);
+      return judgeName;
     }
     
     // Then try the last page (signature blocks)
-    for (const pattern of judgePatterns) {
-      const match = lastPageText.match(pattern);
-      if (match && match[1]) {
-        const judgeName = this.cleanJudgeName(match[1].trim());
-        console.log('👨‍⚖️ Judge found in last page:', judgeName);
-        return judgeName;
-      }
+    const lastPageResult = SafeRegexService.safeMultiMatchSync(
+      judgePatterns, 
+      SafeRegexService.sanitizeInput(lastPageText), 
+      1500 // 1.5 second timeout
+    );
+    
+    if (!lastPageResult.timedOut && lastPageResult.match && lastPageResult.match[1]) {
+      const judgeName = this.cleanJudgeName(lastPageResult.match[1].trim());
+      console.log('👨‍⚖️ Judge found in last page:', judgeName);
+      return judgeName;
     }
     
-    // Finally, scan the entire document (fallback for judges mentioned anywhere)
+    // Finally, scan the entire document (fallback - with timeout protection)
     console.log('🔍 Scanning entire document for judge name...');
-    for (const pattern of judgePatterns) {
-      const match = text.match(pattern);
-      if (match && match[1]) {
-        const judgeName = this.cleanJudgeName(match[1].trim());
-        console.log('👨‍⚖️ Judge found in full document:', judgeName);
-        return judgeName;
-      }
+    const fullDocResult = SafeRegexService.safeMultiMatchSync(
+      judgePatterns, 
+      SafeRegexService.sanitizeInput(text, 8000), // Limit full doc scan to 8KB
+      3000 // 3 second timeout for full document
+    );
+    
+    if (!fullDocResult.timedOut && fullDocResult.match && fullDocResult.match[1]) {
+      const judgeName = this.cleanJudgeName(fullDocResult.match[1].trim());
+      console.log('👨‍⚖️ Judge found in full document:', judgeName);
+      return judgeName;
+    }
+    
+    if (firstPageResult.timedOut || lastPageResult.timedOut || fullDocResult.timedOut) {
+      console.warn('⚠️ Judge name extraction timed out');
     }
     
     return null;
@@ -377,10 +413,18 @@ export class PDFContentParser {
    * Identify if document is an order, application, or statement
    */
   private identifyDocumentType(text: string): 'order' | 'application' | 'statement' | 'judgment' | null {
-    // Check each pattern with its type - statements checked first
+    const sanitizedText = SafeRegexService.sanitizeInput(text, 3000); // First 3KB should be enough for document type
+    
+    // Check each pattern with its type
     for (const item of this.patterns.documentType) {
-      if (item.pattern.test(text)) {
-        return item.type as 'order' | 'application' | 'statement' | 'judgment';
+      try {
+        if (item.pattern.test(sanitizedText)) {
+          console.log('📋 Document type identified:', item.type);
+          return item.type as 'order' | 'application' | 'statement' | 'judgment';
+        }
+      } catch (error) {
+        console.warn('⚠️ Document type detection error for pattern:', item.pattern.source, error);
+        continue; // Try next pattern
       }
     }
 
@@ -394,38 +438,46 @@ export class PDFContentParser {
     // Focus on first 800 characters where names typically appear in headers
     const firstPart = text.substring(0, 800);
     
-    // Try each pattern specifically designed for statement headers
-    for (let i = 0; i < this.patterns.statementPersonName.length; i++) {
-      const pattern = this.patterns.statementPersonName[i];
-      const match = firstPart.match(pattern);
-      if (match && match[1]) {
-        const name = match[1].trim();
-        
-        // Validate it looks like a real name
-        if (this.isValidPersonName(name)) {
-          const cleanedName = this.cleanPersonName(name);
-          console.log('🔍 Person name found:', cleanedName);
-          return cleanedName;
-        }
+    // Try statement name patterns using safe regex
+    const headerResult = SafeRegexService.safeMultiMatchSync(
+      this.patterns.statementPersonName, 
+      SafeRegexService.sanitizeInput(firstPart), 
+      2000 // 2 second timeout for header patterns
+    );
+    
+    if (!headerResult.timedOut && headerResult.match && headerResult.match[1]) {
+      const name = headerResult.match[1].trim();
+      
+      // Validate it looks like a real name
+      if (this.isValidPersonName(name)) {
+        const cleanedName = this.cleanPersonName(name);
+        console.log('🔍 Person name found:', cleanedName, `(pattern ${headerResult.patternIndex})`);
+        return cleanedName;
       }
     }
     
     // If no name found in header, check signature area at end
     const lastPart = text.substring(Math.max(0, text.length - 500));
     
-    // Try signature patterns
-    for (let i = 0; i < this.patterns.signaturePatterns.length; i++) {
-      const pattern = this.patterns.signaturePatterns[i];
-      const match = lastPart.match(pattern);
-      if (match) {
-        // For signature patterns, name might be in match[1] or match[2] depending on pattern
-        const name = (match[1] || match[2] || '').trim();
-        if (name && this.isValidPersonName(name)) {
-          const cleanedName = this.cleanPersonName(name);
-          console.log('🔍 Person name found in signature:', cleanedName);
-          return cleanedName;
-        }
+    // Try signature patterns using safe regex
+    const signatureResult = SafeRegexService.safeMultiMatchSync(
+      this.patterns.signaturePatterns, 
+      SafeRegexService.sanitizeInput(lastPart), 
+      1500 // 1.5 second timeout for signature patterns
+    );
+    
+    if (!signatureResult.timedOut && signatureResult.match) {
+      // For signature patterns, name might be in match[1] or match[2] depending on pattern
+      const name = (signatureResult.match[1] || signatureResult.match[2] || '').trim();
+      if (name && this.isValidPersonName(name)) {
+        const cleanedName = this.cleanPersonName(name);
+        console.log('🔍 Person name found in signature:', cleanedName, `(pattern ${signatureResult.patternIndex})`);
+        return cleanedName;
       }
+    }
+    
+    if (headerResult.timedOut || signatureResult.timedOut) {
+      console.warn('⚠️ Person name extraction timed out');
     }
     
     return null;

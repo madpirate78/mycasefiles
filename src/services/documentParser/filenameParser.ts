@@ -1,4 +1,5 @@
 import { FilenameData } from './types';
+import { SafeRegexService } from '../safeRegexService';
 
 export class FilenameParser {
   private patterns = {
@@ -37,22 +38,29 @@ export class FilenameParser {
     // Remove file extension
     const nameWithoutExt = filename.replace(/\.[^.]+$/, '');
     
-    // Extract case number
-    for (const pattern of this.patterns.caseNumber) {
-      const match = nameWithoutExt.match(pattern);
-      if (match) {
-        data.caseNumber = match[1].toUpperCase();
-        break;
-      }
+    // Sanitize filename (filenames are typically short, so this is safe)
+    const sanitizedName = SafeRegexService.sanitizeInput(nameWithoutExt, 500);
+    
+    // Extract case number using safe regex
+    const caseNumberResult = SafeRegexService.safeMultiMatchSync(
+      this.patterns.caseNumber, 
+      sanitizedName, 
+      1000 // 1 second timeout for filename parsing
+    );
+    
+    if (!caseNumberResult.timedOut && caseNumberResult.match) {
+      data.caseNumber = caseNumberResult.match[1].toUpperCase();
     }
     
-    // Extract form type
-    for (const pattern of this.patterns.formType) {
-      const match = nameWithoutExt.match(pattern);
-      if (match) {
-        data.formType = match[1].toUpperCase();
-        break;
-      }
+    // Extract form type using safe regex
+    const formTypeResult = SafeRegexService.safeMultiMatchSync(
+      this.patterns.formType, 
+      sanitizedName, 
+      800 // 800ms timeout for form type
+    );
+    
+    if (!formTypeResult.timedOut && formTypeResult.match) {
+      data.formType = formTypeResult.match[1].toUpperCase();
     }
     
     // Determine document type from filename
@@ -72,13 +80,15 @@ export class FilenameParser {
       }
     }
     
-    // Extract date from filename
-    for (const pattern of this.patterns.date) {
-      const match = nameWithoutExt.match(pattern);
-      if (match) {
-        data.date = this.parseDateFromFilename(match[1]);
-        break;
-      }
+    // Extract date from filename using safe regex
+    const dateResult = SafeRegexService.safeMultiMatchSync(
+      this.patterns.date, 
+      sanitizedName, 
+      800 // 800ms timeout for date extraction
+    );
+    
+    if (!dateResult.timedOut && dateResult.match) {
+      data.date = this.parseDateFromFilename(dateResult.match[1]);
     }
     
     return data;

@@ -99,7 +99,7 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQu
       <h1>Welcome to Your Case Files</h1>
       
       <div className="filing-cabinet">
-        <FileUpload onFileUpload={onFileUpload} />
+        <FileUpload onFileUpload={onFileUpload} currentVaultFileCount={uploadedFiles.length} />
         
         {onNavigateToImport && (
           <div className="import-section">

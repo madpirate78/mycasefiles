@@ -379,6 +379,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                     <input
                       type="file"
                       multiple
+                      accept=".pdf,application/pdf"
                       onChange={(e) => e.target.files && onFileUpload(e.target.files)}
                       style={{ display: 'none' }}
                     />
