@@ -868,11 +868,12 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
     onClose();
   };
 
-  if (!isOpen || !file) return null;
-
-  const updateMetadata = (key: string, value: string) => {
+  // Stable updateMetadata function using useCallback
+  const updateMetadata = useCallback((key: string, value: string) => {
     setMetadata(prev => ({ ...prev, [key]: value }));
-  };
+  }, []);
+
+  if (!isOpen || !file) return null;
 
   const renderField = (field: FormField) => {
     const value = (metadata as any)[field.key] || '';
@@ -957,7 +958,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         return (
           <input
             type="text"
-            value={value}
+            value={value || ''}
             onChange={(e) => updateMetadata(field.key, e.target.value)}
             placeholder={field.placeholder}
             className="form-input"
