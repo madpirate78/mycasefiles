@@ -323,6 +323,18 @@ h6 {
 .pdf-preview {
   height: 70vh;
   border: 1px solid var(--light-gray);
+  display: flex;
+  flex-direction: column;
+}
+
+.pdf-preview .pdf-renderer {
+  flex: 1;
+  height: 100%;
+}
+
+.pdf-preview iframe {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .metadata-section {
@@ -368,7 +380,7 @@ h6 {
 }
 
 .nav-btn.active {
-  background: var(--primary-color);
+  background: var(--dark-gray);
   color: var(--white);
 }
 
