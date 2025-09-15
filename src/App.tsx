@@ -6,11 +6,10 @@ import DocumentVault from './components/DocumentVault';
 import BundleList from './components/BundleList';
 import VaultSelector from './components/VaultSelector';
 import VaultSettings from './components/VaultSettings';
-import FolderImportWizard from './components/FolderImportWizard';
 import { FileWithOCR } from './components/FilePreviewModal';
 import { VaultType } from './types/vault';
 
-type View = 'home' | 'bundles' | 'documents' | 'import' | 'settings';
+type View = 'home' | 'bundles' | 'documents' | 'settings';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('home');
@@ -191,63 +190,6 @@ function App() {
     }
   };
 
-  const handleFolderImport = async (files: FileList, mappings: Array<{ file: File; sectionId: string }>) => {
-    
-    let successCount = 0;
-    let duplicateCount = 0;
-    let errorCount = 0;
-    const duplicateFiles: string[] = [];
-    
-    for (const mapping of mappings) {
-      try {
-        // Check for duplicates
-        if (await isDuplicateFile(mapping.file, currentVault)) {
-          duplicateFiles.push(mapping.file.name);
-          duplicateCount++;
-          continue;
-        }
-
-        // Add file with section assignment
-        await addFile(mapping.file, currentVault);
-        
-        // Update with section
-        const addedFiles = await getFiles(currentVault);
-        const addedFile = addedFiles.find(f => f.name === mapping.file.name);
-        if (addedFile?.id) {
-          await updateFile(addedFile.id, {
-            section: mapping.sectionId,
-            vaultType: currentVault
-          });
-        }
-
-        successCount++;
-      } catch (error) {
-        console.error(`Error importing file ${mapping.file.name}:`, error);
-        errorCount++;
-      }
-    }
-    
-    // Refresh file list
-    if (successCount > 0) {
-      fetchFilesFromDB();
-    }
-
-    // Show results notification
-    if (successCount > 0 && duplicateCount === 0 && errorCount === 0) {
-      showUploadNotification('success', `Successfully imported ${successCount} files from organized folders`);
-    } else if (successCount > 0 && duplicateCount > 0) {
-      showUploadNotification('warning', `Imported ${successCount} files, ${duplicateCount} duplicates skipped`);
-    } else if (successCount > 0 && errorCount > 0) {
-      showUploadNotification('warning', `Imported ${successCount} files, ${errorCount} failed`);
-    } else if (duplicateCount > 0 && successCount === 0) {
-      showUploadNotification('warning', `All ${duplicateCount} files were already uploaded`);
-    } else if (errorCount > 0) {
-      showUploadNotification('error', `Failed to import ${errorCount} files`);
-    }
-
-    // Navigate back to home to see imported files
-    setCurrentView('home');
-  };
 
   const handleVaultChange = (vaultType: VaultType) => {
     setCurrentVault(vaultType);
@@ -312,17 +254,15 @@ function App() {
   const renderContent = () => {
     switch (currentView) {
       case 'home':
-        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} onNavigateToImport={() => setCurrentView('import')} />;
+        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} />;
       case 'bundles':
         return <BundleList uploadedFiles={uploadedFiles} />;
       case 'documents':
         return <DocumentVault uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileDelete={handleFileDelete} onFileEdit={handleFileUpdate} onFileUpdate={handlePageSelectionUpdate} currentVault={currentVault} />;
-      case 'import':
-        return <FolderImportWizard currentVault={currentVault} onImport={handleFolderImport} />;
       case 'settings':
         return <VaultSettings vaultType={currentVault} />;
       default:
-        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} onNavigateToImport={() => setCurrentView('import')} />;
+        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} />;
     }
   };
 
@@ -400,14 +340,6 @@ function App() {
           >
             <span className="nav-icon">📁</span>
             <span className="nav-label">Bundles</span>
-          </button>
-          <div className="nav-separator"></div>
-          <button 
-            className={`nav-btn ${currentView === 'import' ? 'active' : ''}`}
-            onClick={() => setCurrentView('import')}
-          >
-            <span className="nav-icon">📂</span>
-            <span className="nav-label">Import Folders</span>
           </button>
         </nav>
 

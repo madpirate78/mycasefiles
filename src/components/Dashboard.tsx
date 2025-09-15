@@ -11,10 +11,9 @@ interface DashboardProps {
   onFileUpload: (files: FileList) => void;
   onQuickOrganize: (fileId: number, section: string, vaultType: VaultType) => void;
   currentVault: VaultType;
-  onNavigateToImport?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQuickOrganize, currentVault, onNavigateToImport }) => {
+const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQuickOrganize, currentVault }) => {
   const [selectedFile, setSelectedFile] = useState<StoredFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   // Filter only uncategorized files (those without a section)
@@ -101,23 +100,6 @@ const Dashboard: React.FC<DashboardProps> = ({ uploadedFiles, onFileUpload, onQu
       <div className="filing-cabinet">
         <FileUpload onFileUpload={onFileUpload} currentVaultFileCount={uploadedFiles.length} />
         
-        {onNavigateToImport && (
-          <div className="import-section">
-            <div className="import-card">
-              <div className="import-icon">📂</div>
-              <div className="import-content">
-                <h3>Already Organized?</h3>
-                <p>Import files from folders like "Section A", "Orders", "Statements", etc.</p>
-                <button 
-                  className="import-btn"
-                  onClick={onNavigateToImport}
-                >
-                  📂 Import Organized Folder
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
         
         <div className="recent-files">
           <h2>Uncategorized Documents</h2>

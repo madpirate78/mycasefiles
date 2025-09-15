@@ -28,9 +28,9 @@ export class SafeRegexService {
     timeoutMs: number = this.DEFAULT_TIMEOUT_MS
   ): RegexMatch {
     const startTime = performance.now();
-    
+
     // Validate timeout parameter
-    const timeout = Math.min(timeoutMs, this.MAX_TIMEOUT_MS);
+    Math.min(timeoutMs, this.MAX_TIMEOUT_MS);
     
     try {
       // For critical security, we'll use a simplified timeout approach
@@ -80,14 +80,14 @@ export class SafeRegexService {
     timeoutMs: number = this.DEFAULT_TIMEOUT_MS
   ): Promise<RegexTestResult> {
     const startTime = performance.now();
-    
+
     // Validate timeout parameter
-    const timeout = Math.min(timeoutMs, this.MAX_TIMEOUT_MS);
+    const validatedTimeout = Math.min(timeoutMs, this.MAX_TIMEOUT_MS);
     
     try {
       const result = await this.executeWithTimeout(
         () => pattern.test(text),
-        timeout
+        validatedTimeout
       );
       
       return {
@@ -98,7 +98,7 @@ export class SafeRegexService {
     } catch (error) {
       console.warn('⚠️ Regex test timed out:', {
         pattern: pattern.source,
-        timeout,
+        timeout: validatedTimeout,
         textLength: text.length,
         executionTime: performance.now() - startTime
       });
@@ -287,6 +287,7 @@ export class SafeRegexService {
     
     // Remove or escape potentially problematic characters that could cause issues
     // Note: This is conservative - adjust based on your specific needs
+    // eslint-disable-next-line no-control-regex
     return text.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F]/g, '');
   }
   
