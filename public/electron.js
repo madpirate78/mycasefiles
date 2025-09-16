@@ -1025,9 +1025,9 @@ async function createBundleIndex(pdfDoc, bundleData) {
   
   for (const section of bundleData.sections) {
     if (!section.documentCount) continue;
-    
-    // Section divider will be at the current actual page number
-    const sectionPageRef = actualPageNumber;
+
+    // Use the pre-calculated section start page from the React service
+    const sectionPageRef = section.startPage || actualPageNumber;
     pageReferences.set(`section_${section.id}`, sectionPageRef);
     
     // Section header (e.g., "A. Chronology")
@@ -1059,7 +1059,9 @@ async function createBundleIndex(pdfDoc, bundleData) {
     drawDottedLine(margin + labelWidth + 10, pageNumX - 10, yPosition + 3, indexPage);
     drawLeftText(pageNumStr, helvetica, 12, yPosition, pageNumX, indexPage);
     
-    actualPageNumber++; // Move past section divider page
+    // Update actualPageNumber to match the section's end page
+    // This ensures proper tracking for any fallback calculations
+    actualPageNumber = section.endPage + 1;
     yPosition -= 20;
     
     // Get documents for this section
@@ -1079,14 +1081,15 @@ async function createBundleIndex(pdfDoc, bundleData) {
         yPosition -= 30;
       }
       
-      // Document will start at current actual page number
-      const docPageRef = actualPageNumber;
+      // Use the pre-calculated bundle pagination from the React service
+      // The bundleStartPage already accounts for proper page counting
+      const docPageRef = doc.bundleStartPage || actualPageNumber;
       pageReferences.set(`doc_${doc.id}`, docPageRef);
-      
+
       // Document entry with subsection numbering (e.g., "B.1 Enforcement Application dated 23 April 2025")
       const docLabel = `${section.letter}.${docIndex} ${doc.name}`;
       const indentX = margin + 20; // Indent sub-items
-      
+
       // Truncate if too long
       let displayLabel = docLabel;
       const maxLabelWidth = width - margin * 2 - 100; // Leave room for dots and page number
@@ -1097,7 +1100,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
         }
         displayLabel += '...';
       }
-      
+
       // Create hyperlink annotation for document
       const docLabelWidth = helvetica.widthOfTextAtSize(displayLabel, 11);
       const docLinkAnnotation = pdfDoc.context.register(
@@ -1110,28 +1113,23 @@ async function createBundleIndex(pdfDoc, bundleData) {
           H: 'I', // Highlight mode
         })
       );
-      
+
       indexPage.node.addAnnot(docLinkAnnotation);
-      
+
       drawLeftText(displayLabel, helvetica, 11, yPosition, indentX, indexPage);
-      
+
       // Page number with dotted line
       const docPageStr = docPageRef.toString();
       const docPageWidth = helvetica.widthOfTextAtSize(docPageStr, 11);
       const docPageX = width - margin - docPageWidth;
-      
+
       drawDottedLine(indentX + docLabelWidth + 10, docPageX - 10, yPosition + 3, indexPage);
       drawLeftText(docPageStr, helvetica, 11, yPosition, docPageX, indexPage);
-      
-      // Calculate how many pages this document will take up
-      let docPageCount = 1; // Default to 1 page
-      if (doc.selectedPages && doc.selectedPages.length > 0) {
-        docPageCount = doc.selectedPages.length;
-      } else if (doc.totalPages && doc.totalPages > 0) {
-        docPageCount = doc.totalPages;
-      }
-      
-      actualPageNumber += docPageCount; // Move past document pages
+
+      // Use the pre-calculated page count from the React service
+      const docPageCount = doc.bundlePageCount || 1;
+
+      // actualPageNumber is now managed at the section level using pre-calculated values
       
       yPosition -= 18;
       docIndex++;
