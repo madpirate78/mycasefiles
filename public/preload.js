@@ -5,6 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronAPI', {
   parsePDF: (pdfBuffer) => ipcRenderer.invoke('parse-pdf', pdfBuffer),
   ocrPDF: (pdfBuffer) => ipcRenderer.invoke('ocr-pdf', pdfBuffer),
+  extractPageCount: (pdfBuffer) => ipcRenderer.invoke('extract-page-count', pdfBuffer),
   createPDFBundle: (bundleData) => ipcRenderer.invoke('create-pdf-bundle', bundleData),
   
   // Add listener for bundle progress updates

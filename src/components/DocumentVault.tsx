@@ -34,6 +34,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
   
   // Batch OCR processing state
   const [showOcrAllDialog, setShowOcrAllDialog] = useState(false);
+  const [showReprocessAllDialog, setShowReprocessAllDialog] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, currentFile: '' });
 
@@ -244,6 +245,71 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
     console.log('🎉 Batch OCR processing completed');
   };
 
+  // Batch reprocess function to extract page counts and basic metadata
+  const handleBatchReprocessStart = async () => {
+    setShowReprocessAllDialog(false);
+    setIsBatchProcessing(true);
+
+    // Filter to only include PDFs that don't already have totalPages
+    const pdfFiles = uploadedFiles.filter(file =>
+      file.type.includes('pdf') && (!file.totalPages || file.totalPages === 0)
+    );
+    const totalPdfCount = uploadedFiles.filter(file => file.type.includes('pdf')).length;
+    const alreadyProcessed = totalPdfCount - pdfFiles.length;
+
+    setBatchProgress({ current: 0, total: pdfFiles.length, currentFile: '' });
+
+    if (pdfFiles.length === 0) {
+      console.log(`✅ All ${totalPdfCount} PDF files already have page counts - nothing to reprocess`);
+      setIsBatchProcessing(false);
+      setBatchProgress({ current: 0, total: 0, currentFile: '' });
+      return;
+    }
+
+    console.log(`🚀 Starting batch reprocessing for ${pdfFiles.length} PDF files (${alreadyProcessed} already processed)`);
+
+    for (let i = 0; i < pdfFiles.length; i++) {
+      const file = pdfFiles[i];
+      setBatchProgress({ current: i + 1, total: pdfFiles.length, currentFile: file.name });
+
+      try {
+        console.log(`📄 Reprocessing ${i + 1}/${pdfFiles.length}: ${file.name}`);
+
+        if (file.data && window.electronAPI && window.electronAPI.extractPageCount) {
+          const arrayBuffer = await file.data.arrayBuffer();
+
+          // Extract page count via new Electron API
+          const result = await window.electronAPI.extractPageCount(arrayBuffer);
+
+          if (result.success && result.pageCount) {
+            console.log(`📄 Extracted ${result.pageCount} pages from ${file.name}`);
+
+            // Update the file with the page count
+            if (onFileEdit && file.id) {
+              const updatedMetadata = {
+                ...file,
+                totalPages: result.pageCount
+              };
+              onFileEdit(file.id, updatedMetadata as any);
+            }
+          } else {
+            console.warn(`⚠️ Could not extract page count from ${file.name}:`, result.error);
+          }
+        }
+
+        // Short delay between files
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+      } catch (error) {
+        console.error(`❌ Error reprocessing ${file.name}:`, error);
+      }
+    }
+
+    setIsBatchProcessing(false);
+    setBatchProgress({ current: 0, total: 0, currentFile: '' });
+    console.log(`🎉 Batch reprocessing completed - processed ${pdfFiles.length} files, skipped ${alreadyProcessed} already processed`);
+  };
+
   // Filter and sort files
   const processedFiles = useMemo(() => {
     let files = uploadedFiles as ExtendedFile[];
@@ -347,6 +413,14 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             title="OCR and auto-populate all PDF documents"
           >
             {isBatchProcessing ? '🔄 Processing...' : '🔍 OCR ALL'}
+          </button>
+          <button
+            onClick={() => setShowReprocessAllDialog(true)}
+            disabled={isBatchProcessing || uploadedFiles.filter(f => f.type.includes('pdf')).length === 0}
+            className="btn secondary reprocess-all-btn"
+            title="Re-extract page counts and metadata from all PDF documents"
+          >
+            {isBatchProcessing ? '🔄 Processing...' : '📄 Re-process ALL'}
           </button>
         </div>
       </div>
@@ -552,6 +626,65 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                 className="btn primary"
               >
                 🚀 Start OCR Processing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Re-process ALL Confirmation Dialog */}
+      {showReprocessAllDialog && (
+        <div className="modal-overlay" onClick={() => setShowReprocessAllDialog(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>📄 Re-process ALL Documents</h3>
+              <button className="close-btn" onClick={() => setShowReprocessAllDialog(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="ocr-all-info">
+                {(() => {
+                  const totalPdfs = uploadedFiles.filter(f => f.type.includes('pdf')).length;
+                  const missingPageCounts = uploadedFiles.filter(f => f.type.includes('pdf') && (!f.totalPages || f.totalPages === 0)).length;
+                  const alreadyProcessed = totalPdfs - missingPageCounts;
+
+                  return (
+                    <>
+                      <p><strong>Found {totalPdfs} PDF documents:</strong></p>
+                      <ul>
+                        {missingPageCounts > 0 && <li>📄 {missingPageCounts} documents need page count extraction</li>}
+                        {alreadyProcessed > 0 && <li>✅ {alreadyProcessed} documents already have page counts (will be skipped)</li>}
+                        <li>🔢 Update database with correct totalPages values</li>
+                        <li>🔗 Fix bundle index page numbering and navigation</li>
+                        <li>⚡ Quick processing - no OCR required</li>
+                      </ul>
+                      <div className={missingPageCounts > 0 ? "info-box" : "success-box"}>
+                        <p><strong>{missingPageCounts > 0 ? "ℹ️ Purpose:" : "✅ Status:"}</strong></p>
+                        {missingPageCounts > 0 ? (
+                          <>
+                            <p>This fixes bundle index page numbering issues by ensuring all documents have accurate page counts stored in the database.</p>
+                            <p>Processing is fast - typically 1-2 seconds per document. Only documents without page counts will be processed.</p>
+                          </>
+                        ) : (
+                          <p>All PDF documents already have page counts. No reprocessing needed!</p>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button
+                onClick={() => setShowReprocessAllDialog(false)}
+                className="btn secondary"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBatchReprocessStart}
+                className="btn primary"
+              >
+                🚀 Start Reprocessing
               </button>
             </div>
           </div>

@@ -37,6 +37,11 @@ declare global {
         searchablePdf?: ArrayBuffer; // New searchable PDF with text overlay
         error?: string;
       }>;
+      extractPageCount: (arrayBuffer: ArrayBuffer) => Promise<{
+        success: boolean;
+        pageCount?: number;
+        error?: string;
+      }>;
       createPDFBundle: (bundleData: any) => Promise<{
         success: boolean;
         filename?: string;

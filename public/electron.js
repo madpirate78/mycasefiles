@@ -828,6 +828,35 @@ async function createSearchablePDF(originalPdfBuffer, ocrResults, imageDimension
   }
 }
 
+// IPC handler for extracting page count only (fast processing)
+ipcMain.handle('extract-page-count', async (event, pdfBuffer) => {
+  try {
+    console.log('📄 Extracting page count from PDF...');
+
+    // Parse PDF to get page count quickly
+    const data = await pdfParse(Buffer.from(pdfBuffer), {
+      // Minimal processing - just get page count
+      max: 1, // Only parse first page for metadata
+      version: 'v1.10.100'
+    });
+
+    console.log(`📄 PDF page count extracted: ${data.numpages} pages`);
+
+    return {
+      success: true,
+      pageCount: data.numpages
+    };
+
+  } catch (error) {
+    console.error('❌ Page count extraction failed:', error);
+    return {
+      success: false,
+      error: error.message,
+      pageCount: null
+    };
+  }
+});
+
 ipcMain.handle('ocr-pdf', async (event, pdfBuffer) => {
   try {
     // Manual OCR requested
@@ -1019,13 +1048,11 @@ async function createBundleIndex(pdfDoc, bundleData) {
     }
   };
   
-  // We'll calculate absolute page numbers after we know how many front pages there are
-  // For now, track relative positions
-
+  // Use the page references calculated by the React service
   for (const section of bundleData.sections) {
     if (!section.documentCount) continue;
 
-    // Store relative page numbers - will be adjusted after front matter is complete
+    // Use the startPage from the bundle data (calculated by React service)
     const sectionPageRef = section.startPage;
     pageReferences.set(`section_${section.id}`, sectionPageRef);
     
@@ -1077,8 +1104,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
         yPosition -= 30;
       }
       
-      // Use the pre-calculated bundle pagination from the React service
-      // Store relative page numbers - will be adjusted after front matter is complete
+      // Use the pre-calculated bundle page reference from the React service
       const docPageRef = doc.bundleStartPage;
       pageReferences.set(`doc_${doc.id}`, docPageRef);
 
@@ -1122,10 +1148,6 @@ async function createBundleIndex(pdfDoc, bundleData) {
       drawDottedLine(indentX + docLabelWidth + 10, docPageX - 10, yPosition + 3, indexPage);
       drawLeftText(docPageStr, helvetica, 11, yPosition, docPageX, indexPage);
 
-      // Use the pre-calculated page count from the React service
-      const docPageCount = doc.bundlePageCount || 1;
-
-      // Page numbers will be adjusted after front matter is calculated
       
       yPosition -= 18;
       docIndex++;

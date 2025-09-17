@@ -91,12 +91,32 @@ export const openDB = (): Promise<IDBDatabase> => {
   });
 };
 
-export const addFile = (file: File, vaultType?: 'child' | 'finance'): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    if (!db) {
-      reject("Database not open.");
-      return;
+export const addFile = async (file: File, vaultType?: 'child' | 'finance'): Promise<string> => {
+  if (!db) {
+    throw new Error("Database not open.");
+  }
+
+  // Extract page count from PDF during upload for better bundle generation
+  let totalPages: number | undefined;
+
+  if (file.type === 'application/pdf' && (window as any).electronAPI?.extractPageCount) {
+    try {
+      console.log(`📄 Extracting page count for: ${file.name}`);
+      const arrayBuffer = await file.arrayBuffer();
+      const result = await (window as any).electronAPI.extractPageCount(arrayBuffer);
+
+      if (result.success && result.pageCount) {
+        totalPages = result.pageCount;
+        console.log(`✅ Extracted ${totalPages} pages from ${file.name}`);
+      } else {
+        console.warn(`⚠️ Could not extract page count from ${file.name}:`, result.error);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Page count extraction failed for ${file.name}:`, error);
     }
+  }
+
+  return new Promise((resolve, reject) => {
     const transaction = db.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
     const fileData: StoredFile = {
@@ -106,7 +126,8 @@ export const addFile = (file: File, vaultType?: 'child' | 'finance'): Promise<st
       data: file,
       section: 'uncategorized',
       vaultType: vaultType || 'child', // Default to child vault
-      addedDate: new Date().toISOString()
+      addedDate: new Date().toISOString(),
+      totalPages: totalPages // Store page count if extracted
     };
     const request = store.add(fileData);
 
