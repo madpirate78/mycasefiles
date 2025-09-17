@@ -1019,15 +1019,14 @@ async function createBundleIndex(pdfDoc, bundleData) {
     }
   };
   
-  // Track actual page numbers as they'll be in the final PDF
-  const frontPageCount = 2; // Cover page + index page(s)
-  let actualPageNumber = frontPageCount + 1; // Start counting after front matter
-  
+  // We'll calculate absolute page numbers after we know how many front pages there are
+  // For now, track relative positions
+
   for (const section of bundleData.sections) {
     if (!section.documentCount) continue;
 
-    // Use the pre-calculated section start page from the React service
-    const sectionPageRef = section.startPage || actualPageNumber;
+    // Store relative page numbers - will be adjusted after front matter is complete
+    const sectionPageRef = section.startPage;
     pageReferences.set(`section_${section.id}`, sectionPageRef);
     
     // Section header (e.g., "A. Chronology")
@@ -1059,9 +1058,6 @@ async function createBundleIndex(pdfDoc, bundleData) {
     drawDottedLine(margin + labelWidth + 10, pageNumX - 10, yPosition + 3, indexPage);
     drawLeftText(pageNumStr, helvetica, 12, yPosition, pageNumX, indexPage);
     
-    // Update actualPageNumber to match the section's end page
-    // This ensures proper tracking for any fallback calculations
-    actualPageNumber = section.endPage + 1;
     yPosition -= 20;
     
     // Get documents for this section
@@ -1082,8 +1078,8 @@ async function createBundleIndex(pdfDoc, bundleData) {
       }
       
       // Use the pre-calculated bundle pagination from the React service
-      // The bundleStartPage already accounts for proper page counting
-      const docPageRef = doc.bundleStartPage || actualPageNumber;
+      // Store relative page numbers - will be adjusted after front matter is complete
+      const docPageRef = doc.bundleStartPage;
       pageReferences.set(`doc_${doc.id}`, docPageRef);
 
       // Document entry with subsection numbering (e.g., "B.1 Enforcement Application dated 23 April 2025")
@@ -1129,7 +1125,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
       // Use the pre-calculated page count from the React service
       const docPageCount = doc.bundlePageCount || 1;
 
-      // actualPageNumber is now managed at the section level using pre-calculated values
+      // Page numbers will be adjusted after front matter is calculated
       
       yPosition -= 18;
       docIndex++;
@@ -1143,7 +1139,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
   for (const page of indexPages) {
     const pageText = pageNum.toString();
     const pageTextWidth = helvetica.widthOfTextAtSize(pageText, 10);
-    
+
     page.drawText(pageText, {
       x: (width - pageTextWidth) / 2,
       y: 30,
@@ -1153,11 +1149,22 @@ async function createBundleIndex(pdfDoc, bundleData) {
     });
     pageNum++;
   }
-  
-  // Return both cover page, index pages, and page references for bookmarks
+
+  // Now adjust all page references to account for front matter
+  const frontMatterPageCount = indexPages.length + 1; // Cover page + index pages
+  const adjustedPageReferences = new Map();
+
+  for (const [key, relativePage] of pageReferences.entries()) {
+    const absolutePage = relativePage + frontMatterPageCount;
+    adjustedPageReferences.set(key, absolutePage);
+  }
+
+  console.log(`📚 Front matter pages: ${frontMatterPageCount}, adjusting page references`);
+
+  // Return both cover page, index pages, and adjusted page references for bookmarks
   return {
     pages: [coverPage, ...indexPages],
-    pageReferences: pageReferences
+    pageReferences: adjustedPageReferences
   };
 }
 

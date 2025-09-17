@@ -140,7 +140,8 @@ class BundleGenerationService {
   }
   
   private async calculateSectionPagination(sections: BundleSection[]): Promise<void> {
-    let currentPage = 1; // Bundle pages start from 1
+    // Calculate relative page numbers - these will be adjusted in Electron for front matter
+    let currentPage = 1; // Bundle content pages start from 1 (relative to content start)
     
     console.log('📄 Calculating pagination for bundle sections...');
     
@@ -165,9 +166,28 @@ class BundleGenerationService {
           docPageCount = doc.file.totalPages;
           console.log(`📄 Document "${doc.file.name}": ${docPageCount} total pages (no selection)`);
         } else {
-          // Default to 1 page if no page info available
-          docPageCount = 1;
-          console.log(`📄 Document "${doc.file.name}": defaulting to 1 page (no page info)`);
+          // Extract page count from PDF if not available
+          try {
+            if (window.electronAPI && window.electronAPI.parsePDF) {
+              console.log(`🔍 Document "${doc.file.name}": extracting page count from PDF...`);
+              const arrayBuffer = await this.fileToArrayBuffer(doc.file.data);
+              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+
+              if (pdfResult.success && pdfResult.pages && pdfResult.pages > 0) {
+                docPageCount = pdfResult.pages;
+                console.log(`✅ Document "${doc.file.name}": extracted ${docPageCount} pages from PDF`);
+              } else {
+                docPageCount = 1;
+                console.log(`⚠️ Document "${doc.file.name}": could not extract page count, defaulting to 1`);
+              }
+            } else {
+              docPageCount = 1;
+              console.log(`⚠️ Document "${doc.file.name}": Electron API not available, defaulting to 1 page`);
+            }
+          } catch (error) {
+            docPageCount = 1;
+            console.log(`❌ Document "${doc.file.name}": error extracting page count, defaulting to 1:`, error);
+          }
         }
         
         // Document starts after section divider
