@@ -68,6 +68,9 @@ export interface FileWithOCR extends CoreFileMetadata {
   ocrText?: string;
   ocrConfidence?: number;
   ocrDate?: string;
+  // Page tracking for bundle generation
+  totalPages?: number;
+  selectedPages?: number[];
 }
 
 interface FormField {

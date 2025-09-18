@@ -156,6 +156,9 @@ function App() {
         ocrText: metadata.ocrText as string | undefined,
         ocrConfidence: metadata.ocrConfidence,
         ocrDate: metadata.ocrDate as string | undefined,
+        // Page tracking - CRITICAL for bundle generation!
+        totalPages: metadata.totalPages,
+        selectedPages: metadata.selectedPages,
         // Include updated file data if present (e.g., searchable PDF after OCR)
         ...((metadata as any).data ? { data: (metadata as any).data } : {})
       });

@@ -1047,7 +1047,17 @@ async function createBundleIndex(pdfDoc, bundleData) {
       x += dotSpacing;
     }
   };
-  
+
+  // DEBUG: Log what we received from React service
+  console.log('\n📊 ELECTRON: Bundle Index Generation Debug');
+  console.log('='.repeat(80));
+  console.log('Sections received from React:');
+  bundleData.sections.forEach(section => {
+    if (section.documentCount > 0) {
+      console.log(`  Section ${section.letter}: startPage=${section.startPage}, endPage=${section.endPage}`);
+    }
+  });
+
   // Use the page references calculated by the React service
   for (const section of bundleData.sections) {
     if (!section.documentCount) continue;
@@ -1055,6 +1065,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
     // Use the startPage from the bundle data (calculated by React service)
     const sectionPageRef = section.startPage;
     pageReferences.set(`section_${section.id}`, sectionPageRef);
+    console.log(`  📂 Section ${section.letter} will show page: ${sectionPageRef}`);
     
     // Section header (e.g., "A. Chronology")
     yPosition -= 5;
@@ -1107,6 +1118,13 @@ async function createBundleIndex(pdfDoc, bundleData) {
       // Use the pre-calculated bundle page reference from the React service
       const docPageRef = doc.bundleStartPage;
       pageReferences.set(`doc_${doc.id}`, docPageRef);
+
+      // DEBUG: Log document pagination info
+      console.log(`    📄 Doc ${docIndex}: "${doc.name}"`);
+      console.log(`       - bundleStartPage: ${doc.bundleStartPage}`);
+      console.log(`       - bundlePageCount: ${doc.bundlePageCount}`);
+      console.log(`       - totalPages: ${doc.totalPages}`);
+      console.log(`       - INDEX will show page: ${docPageRef}`);
 
       // Document entry with subsection numbering (e.g., "B.1 Enforcement Application dated 23 April 2025")
       const docLabel = `${section.letter}.${docIndex} ${doc.name}`;
@@ -1172,21 +1190,16 @@ async function createBundleIndex(pdfDoc, bundleData) {
     pageNum++;
   }
 
-  // Now adjust all page references to account for front matter
+  // React service now provides absolute page numbers (already accounting for front matter)
+  // So we don't need to adjust them here
   const frontMatterPageCount = indexPages.length + 1; // Cover page + index pages
-  const adjustedPageReferences = new Map();
+  console.log(`📚 Front matter pages: ${frontMatterPageCount} (cover + ${indexPages.length} index)`);
+  console.log(`📚 React service provided pages already account for front matter`);
 
-  for (const [key, relativePage] of pageReferences.entries()) {
-    const absolutePage = relativePage + frontMatterPageCount;
-    adjustedPageReferences.set(key, absolutePage);
-  }
-
-  console.log(`📚 Front matter pages: ${frontMatterPageCount}, adjusting page references`);
-
-  // Return both cover page, index pages, and adjusted page references for bookmarks
+  // Return both cover page, index pages, and the original page references
   return {
     pages: [coverPage, ...indexPages],
-    pageReferences: adjustedPageReferences
+    pageReferences: pageReferences // Use original references, not adjusted
   };
 }
 
