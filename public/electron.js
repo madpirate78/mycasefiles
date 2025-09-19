@@ -1079,7 +1079,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
         Subtype: 'Link',
         Rect: [margin, yPosition - 2, margin + labelWidth, yPosition + 12],
         Border: [0, 0, 0],
-        Dest: [sectionPageRef - 1, 'XYZ', null, null, null], // 0-indexed page reference
+        Dest: [sectionPageRef - 1, 'XYZ', null, null, null], // Convert 1-based to 0-indexed
         H: 'I', // Highlight mode
       })
     );
@@ -1149,7 +1149,7 @@ async function createBundleIndex(pdfDoc, bundleData) {
           Subtype: 'Link',
           Rect: [indentX, yPosition - 2, indentX + docLabelWidth, yPosition + 11],
           Border: [0, 0, 0],
-          Dest: [docPageRef - 1, 'XYZ', null, null, null], // 0-indexed page reference
+          Dest: [docPageRef - 1, 'XYZ', null, null, null], // Convert 1-based to 0-indexed
           H: 'I', // Highlight mode
         })
       );

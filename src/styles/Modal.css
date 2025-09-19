@@ -1,0 +1,148 @@
+/* Modal Overlay and Content */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-md);
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  max-width: 95vw;
+  width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-xl);
+}
+
+.modal-content.small {
+  max-width: 400px;
+  width: 90%;
+}
+
+.modal-content.large {
+  max-width: 95vw;
+  max-height: 90vh;
+}
+
+.modal-content h3 {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-md);
+  color: var(--text-primary);
+}
+
+/* Modal Structure */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg);
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+}
+
+.modal-body {
+  padding: var(--spacing-lg);
+  display: flex;
+  gap: var(--spacing-lg);
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--medium-gray);
+}
+
+.close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  color: var(--text-secondary);
+}
+
+.close-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Quick Organize Modal */
+.quick-organize-modal .modal-header h2 {
+  font-size: var(--font-size-xl);
+}
+
+/* Info and Warning Boxes */
+.info-box {
+  background: var(--info-light);
+  color: var(--info-text);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-md) 0;
+}
+
+.warning-box {
+  background: var(--warning-light);
+  color: var(--warning-text);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-md) 0;
+}
+
+.error-box {
+  background: var(--danger-light);
+  color: var(--danger-text);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-md) 0;
+}
+
+.success-box {
+  background: var(--success-light);
+  color: var(--success-text);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-md) 0;
+}
+
+/* PDF Preview in Modal */
+.preview-section {
+  flex: 1;
+}
+
+.pdf-preview {
+  height: 70vh;
+  border: 1px solid var(--light-gray);
+  display: flex;
+  flex-direction: column;
+}
+
+.pdf-preview .pdf-renderer {
+  flex: 1;
+  height: 100%;
+}
+
+.pdf-preview iframe {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.metadata-section {
+  flex: 0 0 600px;
+  overflow-y: auto;
+}

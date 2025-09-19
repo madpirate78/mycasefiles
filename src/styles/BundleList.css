@@ -1,0 +1,164 @@
+/* Bundle List Components */
+.bundle-list {
+  padding: var(--spacing-lg);
+}
+
+.bundle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.bundle-header h1 {
+  margin: 0;
+  color: var(--primary);
+}
+
+/* Bundle Grid */
+.bundle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.bundle-card {
+  background: var(--white);
+  border: 1px solid var(--medium-gray);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease;
+}
+
+.bundle-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.bundle-card h3 {
+  margin: 0 0 var(--spacing-sm) 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-lg);
+}
+
+.bundle-meta {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.4;
+}
+
+.bundle-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--light-gray);
+}
+
+.bundle-actions .btn {
+  flex: 1;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-xs) var(--spacing-sm);
+}
+
+/* Bundle Status */
+.bundle-status {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--spacing-sm);
+}
+
+.bundle-status.draft {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.bundle-status.completed {
+  background: var(--success-light);
+  color: var(--success);
+}
+
+/* Bundle Info */
+.bundle-info {
+  background: var(--info-light);
+  border-left: 4px solid var(--info);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.bundle-info h3 {
+  margin-bottom: var(--spacing-md);
+  color: var(--info-text);
+}
+
+.bundle-info ul {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+  color: var(--info-text);
+}
+
+/* Empty Bundles State */
+.empty-bundles {
+  text-align: center;
+  padding: var(--spacing-xxl);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.empty-bundles h3 {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.empty-bundles p {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Bundle Progress Modal */
+.bundle-progress {
+  padding: var(--spacing-lg);
+}
+
+.progress-stage {
+  font-weight: var(--font-weight-medium);
+  color: var(--primary);
+  margin-bottom: var(--spacing-xs);
+}
+
+.progress-message {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 20px;
+  background: var(--light-gray);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  margin-bottom: var(--spacing-sm);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.progress-percentage {
+  text-align: center;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}

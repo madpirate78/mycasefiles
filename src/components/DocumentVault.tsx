@@ -5,6 +5,9 @@ import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
 import FilePreviewModal, { FileWithOCR } from './FilePreviewModal';
 import PagePruneModal from './PagePruneModal';
+import '../styles/DocumentVault.css';
+import '../styles/Modal.css';
+import '../styles/Forms.css';
 
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
@@ -33,7 +36,6 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
   const [isPagePruneModalOpen, setIsPagePruneModalOpen] = useState(false);
   
   // Batch OCR processing state
-  const [showOcrAllDialog, setShowOcrAllDialog] = useState(false);
   const [showReprocessAllDialog, setShowReprocessAllDialog] = useState(false);
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0, currentFile: '' });
@@ -95,9 +97,9 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
     setPageViewFile(null);
   };
 
-  // Batch OCR processing functions
-  const handleBatchOcrStart = async () => {
-    setShowOcrAllDialog(false);
+  // Removed batch OCR - now happens automatically on upload
+  /* const handleBatchOcrStart_REMOVED = async () => {
+    // setShowOcrAllDialog(false); // Removed
     setIsBatchProcessing(true);
     
     const pdfFiles = uploadedFiles.filter(file => file.type.includes('pdf'));
@@ -243,7 +245,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
     setIsBatchProcessing(false);
     setBatchProgress({ current: 0, total: 0, currentFile: '' });
     console.log('🎉 Batch OCR processing completed');
-  };
+  }; */
 
   // Batch reprocess function to extract page counts and basic metadata
   const handleBatchReprocessStart = async () => {
@@ -406,14 +408,17 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             onChange={(e) => setSearchQuery(e.target.value)}
             className="vault-search"
           />
-          <button
-            onClick={() => setShowOcrAllDialog(true)}
-            disabled={isBatchProcessing || uploadedFiles.filter(f => f.type.includes('pdf')).length === 0}
-            className="btn primary ocr-all-btn"
-            title="OCR and auto-populate all PDF documents"
-          >
-            {isBatchProcessing ? '🔄 Processing...' : '🔍 OCR ALL'}
-          </button>
+          <input
+            type="file"
+            id="vault-file-upload"
+            multiple
+            accept=".pdf,application/pdf"
+            onChange={(e) => e.target.files && onFileUpload(e.target.files)}
+            style={{ display: 'none' }}
+          />
+          <label htmlFor="vault-file-upload" className="btn primary upload-btn">
+            📁 Upload Documents
+          </label>
           <button
             onClick={() => setShowReprocessAllDialog(true)}
             disabled={isBatchProcessing || uploadedFiles.filter(f => f.type.includes('pdf')).length === 0}
@@ -588,13 +593,13 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
         onSave={handlePagePruneSave}
       />
 
-      {/* OCR ALL Confirmation Dialog */}
-      {showOcrAllDialog && (
-        <div className="modal-overlay" onClick={() => setShowOcrAllDialog(false)}>
+      {/* OCR ALL Dialog Removed - OCR now happens automatically on upload */}
+      {false && (
+        <div className="modal-overlay" onClick={() => {}}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3>🔍 OCR ALL Documents</h3>
-              <button className="close-btn" onClick={() => setShowOcrAllDialog(false)}>×</button>
+              <button className="close-btn" onClick={() => {}}>×</button>
             </div>
             <div className="modal-body">
               <div className="ocr-all-info">
@@ -616,13 +621,13 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             </div>
             <div className="modal-footer">
               <button 
-                onClick={() => setShowOcrAllDialog(false)}
+                onClick={() => {}}
                 className="btn secondary"
               >
                 Cancel
               </button>
               <button 
-                onClick={handleBatchOcrStart}
+                onClick={() => {}}
                 className="btn primary"
               >
                 🚀 Start OCR Processing

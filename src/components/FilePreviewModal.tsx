@@ -4,6 +4,8 @@ import ElectronPDFRenderer from './ElectronPDFRenderer';
 import { getSuggestedMetadata, extractFromPDF, detectVaultType } from '../services/documentParser';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
+import '../styles/Modal.css';
+import '../styles/Forms.css';
 
 interface FilePreviewModalProps {
   file: StoredFile | null;

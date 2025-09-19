@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { openDB, addFile, getFiles, updateFile, deleteFile, StoredFile, clearDatabase } from './services/indexedDBService';
 import './App.css';
-import Dashboard from './components/Dashboard';
+import './styles/Notifications.css';
 import DocumentVault from './components/DocumentVault';
 import BundleList from './components/BundleList';
 import VaultSelector from './components/VaultSelector';
@@ -9,17 +9,23 @@ import VaultSettings from './components/VaultSettings';
 import { FileWithOCR } from './components/FilePreviewModal';
 import { VaultType } from './types/vault';
 
-type View = 'home' | 'bundles' | 'documents' | 'settings';
+type View = 'bundles' | 'documents' | 'settings';
 
 function App() {
-  const [currentView, setCurrentView] = useState<View>('home');
+  const [currentView, setCurrentView] = useState<View>('documents');
   const [uploadedFiles, setUploadedFiles] = useState<StoredFile[]>([]);
   const [showBrowserWarning, setShowBrowserWarning] = useState<boolean>(false);
   const [currentVault, setCurrentVault] = useState<VaultType>('child');
   const [uploadNotification, setUploadNotification] = useState<{
-    type: 'success' | 'warning' | 'error';
+    type: 'success' | 'warning' | 'error' | 'processing';
     message: string;
   } | null>(null);
+  const [ocrProgress, setOcrProgress] = useState<{
+    isProcessing: boolean;
+    currentFile: string;
+    current: number;
+    total: number;
+  }>({ isProcessing: false, currentFile: '', current: 0, total: 0 });
 
   // Check if running in Electron
   const isElectron = !!(window as any).electronAPI || !!(window as any).require;
@@ -42,7 +48,7 @@ function App() {
     }
   };
 
-  const showUploadNotification = (type: 'success' | 'warning' | 'error', message: string) => {
+  const showUploadNotification = (type: 'success' | 'warning' | 'error' | 'processing', message: string) => {
     setUploadNotification({ type, message });
     setTimeout(() => setUploadNotification(null), 5000); // Hide after 5 seconds
   };
@@ -53,7 +59,8 @@ function App() {
     let duplicateCount = 0;
     let errorCount = 0;
     const duplicateFiles: string[] = [];
-    
+    const newFileIds: string[] = [];
+
     for (const file of Array.from(files) as File[]) {
       try {
         // Check for duplicates
@@ -63,17 +70,103 @@ function App() {
           continue;
         }
 
-        await addFile(file, currentVault);
+        const fileId = await addFile(file, currentVault);
         successCount++;
+        newFileIds.push(fileId);
       } catch (error) {
         console.error(`Error adding file ${file.name} to IndexedDB:`, error);
         errorCount++;
       }
     }
-    
+
     // Refresh file list if any files were added
     if (successCount > 0) {
-      fetchFilesFromDB();
+      await fetchFilesFromDB();
+
+      // Automatically trigger OCR for newly uploaded PDF files
+      if (window.electronAPI && window.electronAPI.parsePDF) {
+        // Get the updated files after refresh
+        const allFiles = await getFiles(currentVault);
+        const pdfFiles = newFileIds.map(id => allFiles.find(f => f.id === parseInt(id)))
+          .filter(f => f && f.type.includes('pdf')) as StoredFile[];
+
+        if (pdfFiles.length > 0) {
+          console.log(`🚀 Starting automatic OCR for ${pdfFiles.length} PDF files`);
+
+          // Show OCR processing notification
+          setOcrProgress({
+            isProcessing: true,
+            currentFile: '',
+            current: 0,
+            total: pdfFiles.length
+          });
+
+          for (let i = 0; i < pdfFiles.length; i++) {
+            const storedFile = pdfFiles[i];
+            try {
+              // Update progress
+              setOcrProgress({
+                isProcessing: true,
+                currentFile: storedFile.name,
+                current: i + 1,
+                total: pdfFiles.length
+              });
+
+              // Show processing notification
+              showUploadNotification('processing',
+                `Processing ${i + 1}/${pdfFiles.length}: ${storedFile.name.length > 30 ?
+                  storedFile.name.substring(0, 30) + '...' : storedFile.name}`
+              );
+
+              console.log(`🔍 Processing OCR for: ${storedFile.name}`);
+              const arrayBuffer = await storedFile.data.arrayBuffer();
+
+              // Get filename suggestions first
+              const { getSuggestedMetadata } = await import('./services/documentParser');
+              const suggestions = getSuggestedMetadata(storedFile.name, currentVault);
+
+              // Extract PDF text
+              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+              let extractedMetadata: any = {};
+
+              // Run OCR if needed
+              if (pdfResult.isScanned && (window as any).api?.processDocument) {
+                const ocrResult = await (window as any).api.processDocument(storedFile.data, storedFile.name);
+                if (ocrResult) {
+                  extractedMetadata = { ...extractedMetadata, ...ocrResult };
+                }
+              }
+
+              // Merge all metadata
+              const finalMetadata = {
+                ...suggestions,
+                ...extractedMetadata,
+                ocrPerformed: true,
+                totalPages: pdfResult.pages || storedFile.totalPages
+              };
+
+              // Update file with metadata
+              if (storedFile.id) {
+                await updateFile(storedFile.id, finalMetadata);
+              }
+              console.log(`✅ OCR completed for: ${storedFile.name}`);
+            } catch (error) {
+              console.error(`❌ OCR failed for ${storedFile.name}:`, error);
+            }
+          }
+
+          // Clear OCR progress
+          setOcrProgress({ isProcessing: false, currentFile: '', current: 0, total: 0 });
+
+          // Show completion message
+          showUploadNotification('success',
+            `Processing complete! ${pdfFiles.length} ${pdfFiles.length === 1 ? 'file' : 'files'} processed`
+          );
+
+          // Refresh file list after OCR processing
+          fetchFilesFromDB();
+        }
+      }
     }
 
     // Show appropriate notification based on results
@@ -168,17 +261,6 @@ function App() {
     }
   };
 
-  const handleQuickOrganize = async (fileId: number, section: string, vaultType: VaultType) => {
-    try {
-      await updateFile(fileId, {
-        section: section,
-        vaultType: vaultType
-      });
-      fetchFilesFromDB(); // Refresh the files list
-    } catch (error) {
-      console.error('Error organizing file:', error);
-    }
-  };
 
   const handlePageSelectionUpdate = async (fileId: number, selectedPages: number[], totalPages: number) => {
     try {
@@ -256,8 +338,6 @@ function App() {
 
   const renderContent = () => {
     switch (currentView) {
-      case 'home':
-        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} />;
       case 'bundles':
         return <BundleList uploadedFiles={uploadedFiles} />;
       case 'documents':
@@ -265,7 +345,7 @@ function App() {
       case 'settings':
         return <VaultSettings vaultType={currentVault} />;
       default:
-        return <Dashboard uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onQuickOrganize={handleQuickOrganize} currentVault={currentVault} />;
+        return <DocumentVault uploadedFiles={uploadedFiles} onFileUpload={handleFileUpload} onFileDelete={handleFileDelete} onFileEdit={handleFileUpdate} onFileUpdate={handlePageSelectionUpdate} currentVault={currentVault} />;
     }
   };
 
@@ -292,14 +372,22 @@ function App() {
             {uploadNotification.type === 'success' && '✅'}
             {uploadNotification.type === 'warning' && '⚠️'}
             {uploadNotification.type === 'error' && '❌'}
+            {uploadNotification.type === 'processing' && '🔄'}
           </span>
           <span className="notification-text">{uploadNotification.message}</span>
-          <button 
-            className="notification-close"
-            onClick={() => setUploadNotification(null)}
-          >
-            ×
-          </button>
+          {uploadNotification.type !== 'processing' && (
+            <button
+              className="notification-close"
+              onClick={() => setUploadNotification(null)}
+            >
+              ×
+            </button>
+          )}
+          {uploadNotification.type === 'processing' && ocrProgress.total > 0 && (
+            <span className="processing-progress">
+              {ocrProgress.current}/{ocrProgress.total}
+            </span>
+          )}
         </div>
       )}
       
@@ -322,13 +410,6 @@ function App() {
           >
             <span className="nav-icon">⚙️</span>
             <span className="nav-label">Case Settings</span>
-          </button>
-          <button 
-            className={`nav-btn ${currentView === 'home' ? 'active' : ''}`}
-            onClick={() => setCurrentView('home')}
-          >
-            <span className="nav-icon">📥</span>
-            <span className="nav-label">Import Documents</span>
           </button>
           <button 
             className={`nav-btn ${currentView === 'documents' ? 'active' : ''}`}
