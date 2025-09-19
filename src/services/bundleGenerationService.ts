@@ -143,7 +143,6 @@ class BundleGenerationService {
     // Calculate page numbers accounting for front matter (cover page + index pages)
     // Cover page = 1, Index page(s) = 2+, so content starts at page 3 minimum
     const COVER_PAGES = 1;
-    const MIN_INDEX_PAGES = 1; // At least one index page
 
     // Calculate approximate index pages needed (40 lines per page)
     let indexLineCount = 2; // Header + blank

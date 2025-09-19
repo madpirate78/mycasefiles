@@ -149,4 +149,5 @@ class CaseService {
   }
 }
 
-export default new CaseService();
+const caseService = new CaseService();
+export default caseService;
