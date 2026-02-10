@@ -1,5 +1,5 @@
 import React from 'react';
-import { VaultType } from '../types/vault';
+import { VaultType } from '../../types/vault';
 
 interface VaultSelectorProps {
   currentVault: VaultType;

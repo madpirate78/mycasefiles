@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { isElectron, parsePDF } from '../services/electronAPI';
+import { isElectron, parsePDF } from '../../services/electronAPI';
 
 interface ElectronPDFRendererProps {
   file: File;

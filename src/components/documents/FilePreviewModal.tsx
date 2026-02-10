@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { StoredFile } from '../services/indexedDBService';
+import { StoredFile } from '../../services/indexedDBService';
 import ElectronPDFRenderer from './ElectronPDFRenderer';
-import { getSuggestedMetadata, extractFromPDF, detectVaultType } from '../services/documentParser';
-import { VaultType } from '../types/vault';
-import vaultService from '../services/vaultService';
-import { isElectron, parsePDF, ocrPDF } from '../services/electronAPI';
-import { getSectionConfigs, FileMetadata, FormField } from '../constants/sectionConfig';
-import '../styles/Modal.css';
-import '../styles/Forms.css';
+import { getSuggestedMetadata, extractFromPDF, detectVaultType } from '../../services/documentParser';
+import { VaultType } from '../../types/vault';
+import vaultService from '../../services/vaultService';
+import { isElectron, parsePDF, ocrPDF } from '../../services/electronAPI';
+import { getSectionConfigs, FileMetadata, FormField } from '../../constants/sectionConfig';
+import '../../styles/Modal.css';
+import '../../styles/Forms.css';
 
 interface FilePreviewModalProps {
   file: StoredFile | null;
@@ -378,7 +378,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({ file, isOpen, onClo
         // Re-run extraction with OCR text
         try {
           // Import the parser directly to use OCR text instead of re-calling Electron
-          const { PDFContentParser } = await import('../services/documentParser/pdfContentParser');
+          const { PDFContentParser } = await import('../../services/documentParser/pdfContentParser');
           const parser = new PDFContentParser();
           const pdfData = parser.extractFromText(ocrResult.text);
           

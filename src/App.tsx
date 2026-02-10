@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { openDB, getFiles, StoredFile, clearDatabase } from './services/indexedDBService';
 import { uploadFiles, processUploadedPDFs, getUploadNotification, saveFileMetadata, savePageSelection, removeFile, NotificationType } from './services/uploadService';
 import { isElectron } from './services/electronAPI';
-import { FileWithOCR } from './components/FilePreviewModal';
+import { FileWithOCR } from './components/documents/FilePreviewModal';
 import { VaultType } from './types/vault';
-import DocumentVault from './components/DocumentVault';
-import BundleList from './components/BundleList';
-import VaultSelector from './components/VaultSelector';
-import VaultSettings from './components/VaultSettings';
+import DocumentVault from './components/documents/DocumentVault';
+import BundleList from './components/bundles/BundleList';
+import VaultSelector from './components/layout/VaultSelector';
+import VaultSettings from './components/layout/VaultSettings';
 import './App.css';
 import './styles/Notifications.css';
 

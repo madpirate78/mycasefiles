@@ -14,7 +14,7 @@ import { parsePDF } from './electronAPI';
 import { VaultType } from '../types/vault';
 
 // Re-export for convenience - App.tsx can import FileWithOCR from here or from the modal
-import type { FileWithOCR } from '../components/FilePreviewModal';
+import type { FileWithOCR } from '../components/documents/FilePreviewModal';
 
 // ─── Types ───────────────────────────────────────────────────────
 

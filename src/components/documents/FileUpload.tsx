@@ -1,7 +1,7 @@
 // FileUpload.tsx
 import React, { useState } from 'react';
-import { FileValidationService } from '../services/fileValidationService';
-import { FILE_VALIDATION_CONFIG } from '../constants/fileValidation';
+import { FileValidationService } from '../../services/fileValidationService';
+import { FILE_VALIDATION_CONFIG } from '../../constants/fileValidation';
 
 interface FileUploadProps {
   onFileUpload: (files: FileList) => void;

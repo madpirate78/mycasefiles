@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { StoredFile } from '../services/indexedDBService';
-import { 
-  extractPDFPages, 
+import { StoredFile } from '../../services/indexedDBService';
+import {
+  extractPDFPages,
   updatePageSelections,
   PageInfo,
-  PDFPageData 
-} from '../services/pdfPageExtractor';
+  PDFPageData
+} from '../../services/pdfPageExtractor';
 
 interface PagePruneModalProps {
   file: StoredFile | null;

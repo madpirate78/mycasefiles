@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { StoredFile } from '../services/indexedDBService';
-import bundleService, { Bundle } from '../services/bundleService';
-import { formatStoredDate } from '../utils/dateUtils';
-import vaultService from '../services/vaultService';
-import bundleGenerationService from '../services/bundleGenerationService';
-import '../styles/BundleList.css';
-import '../styles/Modal.css';
-import '../styles/Forms.css';
+import { StoredFile } from '../../services/indexedDBService';
+import bundleService, { Bundle } from '../../services/bundleService';
+import { formatStoredDate } from '../../utils/dateUtils';
+import vaultService from '../../services/vaultService';
+import bundleGenerationService from '../../services/bundleGenerationService';
+import '../../styles/BundleList.css';
+import '../../styles/Modal.css';
+import '../../styles/Forms.css';
 
 interface BundleListProps {
   uploadedFiles: StoredFile[];

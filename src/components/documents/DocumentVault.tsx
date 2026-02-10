@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import { StoredFile } from '../services/indexedDBService';
-import { formatStoredDate } from '../utils/dateUtils';
-import { VaultType } from '../types/vault';
-import vaultService from '../services/vaultService';
-import { isElectron, extractPageCount } from '../services/electronAPI';
+import { StoredFile } from '../../services/indexedDBService';
+import { formatStoredDate } from '../../utils/dateUtils';
+import { VaultType } from '../../types/vault';
+import vaultService from '../../services/vaultService';
+import { isElectron, extractPageCount } from '../../services/electronAPI';
 import FilePreviewModal, { FileWithOCR } from './FilePreviewModal';
 import PagePruneModal from './PagePruneModal';
-import '../styles/DocumentVault.css';
-import '../styles/Modal.css';
-import '../styles/Forms.css';
+import '../../styles/DocumentVault.css';
+import '../../styles/Modal.css';
+import '../../styles/Forms.css';
 
 interface DocumentVaultProps {
   uploadedFiles: StoredFile[];
@@ -121,7 +121,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
           
           try {
             // Get filename suggestions first
-            const { getSuggestedMetadata, extractFromPDF } = await import('../services/documentParser');
+            const { getSuggestedMetadata, extractFromPDF } = await import('../../services/documentParser');
             const suggestions = getSuggestedMetadata(file.name, currentVault);
             
             let pdfData: any = null;
@@ -192,7 +192,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             // Step 3: Extract structured data from the text
             if (pdfText) {
               // Use the text-based extraction with our OCR or extracted text
-              const { PDFContentParser } = await import('../services/documentParser/pdfContentParser');
+              const { PDFContentParser } = await import('../../services/documentParser/pdfContentParser');
               const parser = new PDFContentParser();
               pdfData = parser.extractFromText(pdfText);
               console.log(`📊 Extracted data from ${isScanned ? 'OCR' : 'PDF'} text:`, pdfData);
