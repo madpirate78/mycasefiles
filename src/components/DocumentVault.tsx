@@ -3,6 +3,7 @@ import { StoredFile } from '../services/indexedDBService';
 import { formatStoredDate } from '../utils/dateUtils';
 import { VaultType } from '../types/vault';
 import vaultService from '../services/vaultService';
+import { isElectron, extractPageCount } from '../services/electronAPI';
 import FilePreviewModal, { FileWithOCR } from './FilePreviewModal';
 import PagePruneModal from './PagePruneModal';
 import '../styles/DocumentVault.css';
@@ -131,9 +132,9 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
             let ocrConfidence: number | undefined;
             
             // Step 1: Try to extract text via Electron API first
-            if (window.electronAPI && window.electronAPI.parsePDF) {
+            if (isElectron()) {
               console.log(`🔧 Extracting PDF text via Electron for: ${file.name}`);
-              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+              const pdfResult = await parsePDF(arrayBuffer);
               
               if (pdfResult.success && pdfResult.text) {
                 pdfText = pdfResult.text;
@@ -148,7 +149,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                 console.log(`📝 Text extracted via ${method}, length: ${textLength}, isScanned: ${isScanned}`);
                 
                 // Step 2: Run OCR if it's a scanned PDF
-                if (isScanned && window.electronAPI.ocrPDF) {
+                if (isScanned) {
                   console.log(`🔍 Running OCR on scanned PDF: ${file.name}`);
                   setBatchProgress({ 
                     current: i + 1, 
@@ -156,7 +157,7 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
                     currentFile: `${file.name} (OCR processing...)` 
                   });
                   
-                  const ocrResult = await window.electronAPI.ocrPDF(arrayBuffer);
+                  const ocrResult = await ocrPDF(arrayBuffer);
                   if (ocrResult.success && ocrResult.text) {
                     ocrPerformed = true;
                     ocrText = ocrResult.text;
@@ -277,11 +278,11 @@ const DocumentVault: React.FC<DocumentVaultProps> = ({ uploadedFiles, onFileUplo
       try {
         console.log(`📄 Reprocessing ${i + 1}/${pdfFiles.length}: ${file.name}`);
 
-        if (file.data && window.electronAPI && window.electronAPI.extractPageCount) {
+        if (file.data && isElectron()) {
           const arrayBuffer = await file.data.arrayBuffer();
 
-          // Extract page count via new Electron API
-          const result = await window.electronAPI.extractPageCount(arrayBuffer);
+          // Extract page count via Electron API
+          const result = await extractPageCount(arrayBuffer);
 
           if (result.success && result.pageCount) {
             console.log(`📄 Extracted ${result.pageCount} pages from ${file.name}`);

@@ -1,5 +1,6 @@
 // PDF Page Extraction Service for Page Pruning Feature
 // Handles page counting, thumbnail generation, and blank page detection
+import { isElectron, parsePDF } from './electronAPI';
 
 export interface PageInfo {
   number: number;
@@ -19,18 +20,18 @@ export interface PDFPageData {
  * Extract page information from a PDF file using Electron's PDF parsing capabilities
  */
 export const extractPDFPages = async (file: File): Promise<PDFPageData> => {
-  if (!window.electronAPI) {
+  if (!isElectron()) {
     throw new Error('PDF page extraction requires Electron environment');
   }
 
   try {
     console.log('🔄 Extracting PDF pages for:', file.name);
-    
+
     // Convert File to ArrayBuffer for processing
     const arrayBuffer = await file.arrayBuffer();
-    
+
     // Get page count and basic info via Electron
-    const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+    const pdfResult = await parsePDF(arrayBuffer);
     
     if (!pdfResult.success) {
       throw new Error(`PDF parsing failed: ${pdfResult.error}`);

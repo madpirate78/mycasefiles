@@ -2,6 +2,7 @@
 import { Bundle } from './bundleService';
 import { StoredFile } from './indexedDBService';
 import vaultService from './vaultService';
+import { createPDFBundle, parsePDF, onBundleProgress, removeBundleProgressListener } from './electronAPI';
 
 export interface BundleDocument {
   file: StoredFile;
@@ -53,24 +54,19 @@ class BundleGenerationService {
       const bundleData = await this.prepareBundleData(bundle, sections);
       
       // Call Electron main process to create PDF
-      if (window.electronAPI && window.electronAPI.createPDFBundle) {
-        const result = await window.electronAPI.createPDFBundle(bundleData);
-        
-        if (result.success) {
-          console.log('✅ Bundle created successfully:', result.filename);
-          console.log('📂 Bundle location:', result.filePath);
-          
-          // PDF is already saved and opened by Electron
-          return {
-            success: true,
-            filename: result.filename,
-            size: result.size
-          };
-        } else {
-          throw new Error(result.error || 'Bundle creation failed');
-        }
+      const result = await createPDFBundle(bundleData);
+
+      if (result.success) {
+        console.log('✅ Bundle created successfully:', result.filename);
+        console.log('📂 Bundle location:', result.filePath);
+
+        return {
+          success: true,
+          filename: result.filename,
+          size: result.size
+        };
       } else {
-        throw new Error('Electron API not available');
+        throw new Error(result.error || 'Bundle creation failed');
       }
       
     } catch (error) {
@@ -193,22 +189,17 @@ class BundleGenerationService {
           // Extract page count from PDF if not available
           console.log(`      ⚠️ WARNING: No totalPages in DB, attempting extraction...`);
           try {
-            if (window.electronAPI && window.electronAPI.parsePDF) {
-              console.log(`      🔍 Extracting page count from PDF...`);
-              const arrayBuffer = await this.fileToArrayBuffer(doc.file.data);
-              const pdfResult = await window.electronAPI.parsePDF(arrayBuffer);
+            console.log(`      🔍 Extracting page count from PDF...`);
+            const arrayBuffer = await this.fileToArrayBuffer(doc.file.data);
+            const pdfResult = await parsePDF(arrayBuffer);
 
-              if (pdfResult.success && pdfResult.pages && pdfResult.pages > 0) {
-                docPageCount = pdfResult.pages;
-                console.log(`      ✅ Extracted ${docPageCount} pages from PDF`);
-              } else {
-                docPageCount = 1;
-                console.log(`      ❌ FAILED: Could not extract page count, defaulting to 1`);
-                console.log(`      Debug info:`, pdfResult);
-              }
+            if (pdfResult.success && pdfResult.pages && pdfResult.pages > 0) {
+              docPageCount = pdfResult.pages;
+              console.log(`      ✅ Extracted ${docPageCount} pages from PDF`);
             } else {
               docPageCount = 1;
-              console.log(`      ❌ FAILED: Electron API not available, defaulting to 1 page`);
+              console.log(`      ❌ FAILED: Could not extract page count, defaulting to 1`);
+              console.log(`      Debug info:`, pdfResult);
             }
           } catch (error) {
             docPageCount = 1;
@@ -331,23 +322,17 @@ class BundleGenerationService {
   }
   
   // Setup progress listening
-  setupProgressListener(onProgress: (progress: any) => void): () => void {
-    if (window.electronAPI && window.electronAPI.onBundleProgress) {
-      const progressHandler = (_event: any, progress: any) => {
-        onProgress(progress);
-      };
-      
-      window.electronAPI.onBundleProgress(progressHandler);
-      
-      // Return cleanup function
-      return () => {
-        if (window.electronAPI && window.electronAPI.removeBundleProgressListener) {
-          window.electronAPI.removeBundleProgressListener(progressHandler);
-        }
-      };
-    }
-    
-    return () => {}; // No-op cleanup if API not available
+  setupProgressListener(onProgressCb: (progress: any) => void): () => void {
+    const progressHandler = (_event: any, progress: any) => {
+      onProgressCb(progress);
+    };
+
+    onBundleProgress(progressHandler);
+
+    // Return cleanup function
+    return () => {
+      removeBundleProgressListener(progressHandler);
+    };
   }
 }
 

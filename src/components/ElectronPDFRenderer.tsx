@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { isElectron, parsePDF } from '../services/electronAPI';
 
 interface ElectronPDFRendererProps {
   file: File;
@@ -27,11 +28,11 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
 
   const extractPDFInfo = useCallback(async (pdfFile: File) => {
     try {
-      if (!window.electron) return;
-      
+      if (!isElectron()) return;
+
       const arrayBuffer = await pdfFile.arrayBuffer();
-      const result = await window.electron.parsePDF(arrayBuffer);
-      
+      const result = await parsePDF(arrayBuffer);
+
       if (result.success) {
         // For now, assume single page - we can enhance this later
         setTotalPages(1);
@@ -63,7 +64,7 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
       setIsLoading(false);
       
       // Extract page information from PDF (using our existing parser)
-      if (window.electron) {
+      if (isElectron()) {
         extractPDFInfo(file);
       }
       

@@ -1,5 +1,6 @@
 import { CourtDocumentData } from './types';
 import { SafeRegexService } from '../safeRegexService';
+import { isElectron, parsePDF as electronParsePDF } from '../electronAPI';
 
 
 export class PDFContentParser {
@@ -177,12 +178,12 @@ export class PDFContentParser {
   async extractFromPDF(pdfBuffer: ArrayBuffer): Promise<CourtDocumentData> {
     try {
       console.log('🔧 PDF extraction started, buffer size:', pdfBuffer.byteLength);
-      console.log('🌐 Environment check - electronAPI available:', !!window.electronAPI);
-      
+      console.log('🌐 Environment check - electronAPI available:', isElectron());
+
       // Check if we're in Electron environment
-      if (window.electronAPI && window.electronAPI.parsePDF) {
+      if (isElectron()) {
         console.log('✅ Using Electron PDF parser...');
-        const result = await window.electronAPI.parsePDF(pdfBuffer);
+        const result = await electronParsePDF(pdfBuffer);
         console.log('📄 Electron PDF result:', { success: result.success, textLength: result.text?.length, error: result.error });
         
         if (result.success && result.text) {

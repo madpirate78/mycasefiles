@@ -1,4 +1,5 @@
 // src/services/indexedDBService.ts
+import { extractPageCount } from './electronAPI';
 
 const DB_NAME = 'MyCaseFilesDB';
 const DB_VERSION = 5; // Increased for bundles store
@@ -99,11 +100,11 @@ export const addFile = async (file: File, vaultType?: 'child' | 'finance'): Prom
   // Extract page count from PDF during upload for better bundle generation
   let totalPages: number | undefined;
 
-  if (file.type === 'application/pdf' && (window as any).electronAPI?.extractPageCount) {
+  if (file.type === 'application/pdf') {
     try {
       console.log(`📄 Extracting page count for: ${file.name}`);
       const arrayBuffer = await file.arrayBuffer();
-      const result = await (window as any).electronAPI.extractPageCount(arrayBuffer);
+      const result = await extractPageCount(arrayBuffer);
 
       if (result.success && result.pageCount) {
         totalPages = result.pageCount;
