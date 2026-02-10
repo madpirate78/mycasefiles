@@ -347,6 +347,12 @@ p {
   overflow-y: auto;
 }
 
+/* When document detail is active, content needs no padding (detail handles its own) */
+.content:has(.document-detail) {
+  padding: 0;
+  overflow: hidden;
+}
+
 .nav-btn {
   display: flex;
   align-items: center;
@@ -520,6 +526,57 @@ p {
     gap: var(--spacing-sm);
     text-align: center;
   }
+}
+
+/* === VAULT SELECTOR === */
+.vault-selector {
+  display: flex;
+  gap: 2px;
+  background: var(--light-gray);
+  border-radius: var(--radius-full);
+  padding: 2px;
+}
+
+.vault-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-md);
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  background: transparent;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.vault-btn:hover {
+  background: var(--white);
+  color: var(--text-primary);
+}
+
+.vault-btn.active[data-vault="child"] {
+  background: var(--child-light);
+  border-color: var(--child-primary);
+  color: var(--child-primary);
+}
+
+.vault-btn.active[data-vault="finance"] {
+  background: var(--finance-light);
+  border-color: var(--finance-primary);
+  color: var(--finance-primary);
+}
+
+.vault-icon {
+  font-size: var(--font-size-base);
+  line-height: 1;
+}
+
+.vault-label {
+  line-height: 1;
 }
 
 /* Vault-specific color theming */

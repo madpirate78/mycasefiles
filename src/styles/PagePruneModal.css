@@ -1,0 +1,209 @@
+/* === PAGE PRUNE MODAL === */
+.page-prune-modal {
+  max-width: 90vw;
+  width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-prune-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.page-prune-header .file-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.page-prune-header .page-count {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  white-space: nowrap;
+}
+
+/* Bulk Actions */
+.bulk-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) 0;
+  margin-bottom: var(--spacing-sm);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.selection-info {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.selected-count strong {
+  color: var(--primary);
+}
+
+/* Page Carousel Container */
+.page-carousel-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: var(--spacing-sm) 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+.page-carousel-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+.page-carousel-container::-webkit-scrollbar-track {
+  background: var(--light-gray);
+  border-radius: 3px;
+}
+
+.page-carousel-container::-webkit-scrollbar-thumb {
+  background: var(--medium-gray);
+  border-radius: 3px;
+}
+
+.page-carousel {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xs);
+  min-width: min-content;
+}
+
+/* Page Cards */
+.page-card {
+  position: relative;
+  flex: 0 0 180px;
+  border: 2px solid var(--medium-gray);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--white);
+  transition: all 0.2s ease;
+}
+
+.page-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.page-card.deselected {
+  border-color: var(--medium-gray);
+  opacity: 0.5;
+}
+
+.page-card.deselected:hover {
+  opacity: 0.8;
+}
+
+.page-card-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--light-gray);
+  border-bottom: 1px solid var(--medium-gray);
+}
+
+.page-checkbox-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.page-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.checkbox-label {
+  display: none;
+}
+
+.page-header-info {
+  flex: 1;
+}
+
+.page-number {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-secondary);
+}
+
+/* Page Preview */
+.page-preview {
+  width: 100%;
+  height: 220px;
+  overflow: hidden;
+  background: var(--light-gray);
+}
+
+.page-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  pointer-events: none;
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* Click Overlay */
+.click-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.click-overlay:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+/* Loading and Error States */
+.loading-state,
+.error-message {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--text-secondary);
+}
+
+.loading-spinner {
+  margin-top: var(--spacing-sm);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+}
+
+/* Page Selection Panel (inline variant for DocumentDetail) */
+.page-selection-panel .page-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+}
+
+.page-selection-panel .page-card {
+  flex: none;
+  width: 100%;
+}

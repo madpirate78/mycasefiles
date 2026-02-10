@@ -1,21 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { openDB, getFiles, StoredFile, clearDatabase } from './services/indexedDBService';
 import { uploadFiles, processUploadedPDFs, getUploadNotification, saveFileMetadata, savePageSelection, removeFile, NotificationType } from './services/uploadService';
 import { isElectron } from './services/electronAPI';
 import { FileWithOCR } from './components/documents/FilePreviewModal';
 import { VaultType } from './types/vault';
 import DocumentVault from './components/documents/DocumentVault';
+import DocumentDetail from './components/documents/DocumentDetail';
 import BundleList from './components/bundles/BundleList';
 import VaultSelector from './components/layout/VaultSelector';
 import VaultSettings from './components/layout/VaultSettings';
 import './App.css';
 import './styles/Notifications.css';
 
-type View = 'bundles' | 'documents' | 'settings';
+type View = 'bundles' | 'documents' | 'settings' | 'document-detail';
 
 function App() {
   const [currentView, setCurrentView] = useState<View>('documents');
   const [uploadedFiles, setUploadedFiles] = useState<StoredFile[]>([]);
+  const [selectedFile, setSelectedFile] = useState<StoredFile | null>(null);
   const [showBrowserWarning, setShowBrowserWarning] = useState<boolean>(false);
   const [currentVault, setCurrentVault] = useState<VaultType>('child');
   const [uploadNotification, setUploadNotification] = useState<{
@@ -55,7 +57,6 @@ function App() {
   const handleFileUpload = async (files: FileList) => {
     const result = await uploadFiles(files, currentVault);
 
-    // Refresh and run post-upload processing for new PDFs
     if (result.successCount > 0) {
       await fetchFilesFromDB();
 
@@ -77,7 +78,6 @@ function App() {
       }
     }
 
-    // Show upload result notification
     const notification = getUploadNotification(result);
     if (notification) {
       showNotification(notification.type as NotificationType, notification.message);
@@ -113,13 +113,25 @@ function App() {
     }
   };
 
+  // ─── Document detail navigation ───────────────────────────────
+
+  const handleOpenDocument = useCallback((file: StoredFile) => {
+    setSelectedFile(file);
+    setCurrentView('document-detail');
+  }, []);
+
+  const handleBackToDocuments = useCallback(() => {
+    setSelectedFile(null);
+    setCurrentView('documents');
+    fetchFilesFromDB();
+  }, [fetchFilesFromDB]);
+
   // ─── Initialization ──────────────────────────────────────────
 
   useEffect(() => {
     const initializeApp = async () => {
       if (!runningInElectron) {
         setShowBrowserWarning(true);
-        console.warn('⚠️ Running in browser mode - Limited functionality. PDF text extraction and OCR not available.');
       }
 
       try {
@@ -127,12 +139,10 @@ function App() {
         const files = await getFiles(currentVault);
         setUploadedFiles(files);
 
-        // Console utility for development
         (window as any).clearDB = async () => {
           try {
             await clearDatabase();
             setUploadedFiles([]);
-            console.log("Database cleared! Page will refresh...");
             window.location.reload();
           } catch (error) {
             console.error("Failed to clear database:", error);
@@ -160,6 +170,31 @@ function App() {
 
   const renderContent = () => {
     switch (currentView) {
+      case 'document-detail':
+        if (selectedFile) {
+          return (
+            <DocumentDetail
+              file={selectedFile}
+              vaultType={currentVault}
+              onBack={handleBackToDocuments}
+              onSave={handleFileUpdate}
+              onDelete={handleFileDelete}
+              onPageSelectionUpdate={handlePageSelectionUpdate}
+            />
+          );
+        }
+        // Fall through to documents if no file selected
+        return (
+          <DocumentVault
+            uploadedFiles={uploadedFiles}
+            onFileUpload={handleFileUpload}
+            onFileDelete={handleFileDelete}
+            onFileEdit={handleFileUpdate}
+            onFileUpdate={handlePageSelectionUpdate}
+            onOpenDocument={handleOpenDocument}
+            currentVault={currentVault}
+          />
+        );
       case 'bundles':
         return <BundleList uploadedFiles={uploadedFiles} />;
       case 'settings':
@@ -173,6 +208,7 @@ function App() {
             onFileDelete={handleFileDelete}
             onFileEdit={handleFileUpdate}
             onFileUpdate={handlePageSelectionUpdate}
+            onOpenDocument={handleOpenDocument}
             currentVault={currentVault}
           />
         );
@@ -184,7 +220,7 @@ function App() {
       {showBrowserWarning && (
         <div className="browser-warning">
           <div className="warning-content">
-            <strong>⚠️ Limited Browser Mode</strong>
+            <strong>Limited Browser Mode</strong>
             <p>
               This app is designed for desktop use with Electron. PDF text extraction, OCR, and document parsing are not available in browser mode.
               <br/>
@@ -232,29 +268,31 @@ function App() {
       </header>
 
       <div className="app-body">
-        <nav className="sidebar">
-          <button
-            className={`nav-btn ${currentView === 'settings' ? 'active' : ''}`}
-            onClick={() => setCurrentView('settings')}
-          >
-            <span className="nav-icon">⚙️</span>
-            <span className="nav-label">Case Settings</span>
-          </button>
-          <button
-            className={`nav-btn ${currentView === 'documents' ? 'active' : ''}`}
-            onClick={() => setCurrentView('documents')}
-          >
-            <span className="nav-icon">📄</span>
-            <span className="nav-label">Documents</span>
-          </button>
-          <button
-            className={`nav-btn ${currentView === 'bundles' ? 'active' : ''}`}
-            onClick={() => setCurrentView('bundles')}
-          >
-            <span className="nav-icon">📁</span>
-            <span className="nav-label">Bundles</span>
-          </button>
-        </nav>
+        {currentView !== 'document-detail' && (
+          <nav className="sidebar">
+            <button
+              className={`nav-btn ${currentView === 'settings' ? 'active' : ''}`}
+              onClick={() => setCurrentView('settings')}
+            >
+              <span className="nav-icon">⚙️</span>
+              <span className="nav-label">Case Settings</span>
+            </button>
+            <button
+              className={`nav-btn ${currentView === 'documents' ? 'active' : ''}`}
+              onClick={() => setCurrentView('documents')}
+            >
+              <span className="nav-icon">📄</span>
+              <span className="nav-label">Documents</span>
+            </button>
+            <button
+              className={`nav-btn ${currentView === 'bundles' ? 'active' : ''}`}
+              onClick={() => setCurrentView('bundles')}
+            >
+              <span className="nav-icon">📁</span>
+              <span className="nav-label">Bundles</span>
+            </button>
+          </nav>
+        )}
 
         <main className="content">
           {renderContent()}

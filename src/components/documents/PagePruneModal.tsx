@@ -6,6 +6,7 @@ import {
   PageInfo,
   PDFPageData
 } from '../../services/pdfPageExtractor';
+import '../../styles/PagePruneModal.css';
 
 interface PagePruneModalProps {
   file: StoredFile | null;
