@@ -34,18 +34,19 @@ const ElectronPDFRenderer: React.FC<ElectronPDFRendererProps> = ({
       const result = await parsePDF(arrayBuffer);
 
       if (result.success) {
-        // For now, assume single page - we can enhance this later
-        setTotalPages(1);
+        setTotalPages(result.pages || 1);
         onLoad?.();
       } else {
-        throw new Error(result.error || 'Failed to parse PDF');
+        // Text extraction failed but PDF preview can still work via blob URL
+        console.warn('PDF text extraction failed:', result.error);
+        onLoad?.();
       }
     } catch (err) {
-      console.error('PDF info extraction failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load PDF');
-      onError?.(err instanceof Error ? err.message : 'Failed to load PDF');
+      // Don't set error state — blob URL preview still works without text extraction
+      console.warn('PDF info extraction failed:', err);
+      onLoad?.();
     }
-  }, [onLoad, onError]);
+  }, [onLoad]);
 
   useEffect(() => {
     console.log('🔍 PDF useEffect triggered:', {

@@ -40,7 +40,12 @@ function init(deps) {
         fileSizeMB: fileSizeMB.toFixed(2)
       });
 
-      resourceMonitor.validateFileOperation(null, 'pdf');
+      // Size check (buffer-based, no file path available)
+      const maxSizeMB = resourceMonitor.limits?.PDF?.MAX_FILE_SIZE_MB || 100;
+      if (fileSizeMB > maxSizeMB) {
+        throw new Error(`PDF too large: ${fileSizeMB.toFixed(1)}MB exceeds ${maxSizeMB}MB limit`);
+      }
+
       const options = {
         normalizeWhitespace: true,
         disableCombineTextItems: false,

@@ -320,7 +320,8 @@ const DocumentDetail: React.FC<DocumentDetailProps> = ({
     };
 
     onSave(file.id!, completeMetadata);
-  }, [file, metadata, sectionConfigs, updatedFileData, onSave]);
+    onBack();
+  }, [file, metadata, sectionConfigs, updatedFileData, onSave, onBack]);
 
   const handleUpdateMetadata = useCallback((key: string, value: string) => {
     setMetadata(prev => ({ ...prev, [key]: value }));
