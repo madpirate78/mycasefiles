@@ -1,123 +1,102 @@
-# MyCaseFiles - Legal Document Management
+# MyCaseFiles
 
-**Desktop application for UK family court document organization.** Built with Electron, React, and TypeScript.
+**A desktop app that helps people representing themselves in the UK family court organise their documents and build court bundles.**
 
-⚠️ **Desktop-only**: Requires Electron for PDF extraction, OCR, and file system access. Browser deployment not supported.
+Litigants in person often have hundreds of pages of applications, orders, statements and reports, and are expected to turn them into a paginated, indexed bundle in the format the court requires. MyCaseFiles sorts documents into the standard bundle sections, reads key details (case number, judge, document type) from file names and PDF text, and produces a bundle with page numbers, section dividers and a hyperlinked index.
 
-**Latest Update**: Bundle Builder - Create and manage court bundles with database storage, navigation reorganized, and comprehensive OCR batch processing.
+> ⚠️ **Not legal advice.** MyCaseFiles is an organisational tool. It does not give legal advice, and it does not guarantee that a bundle meets the requirements of your court or judge. Always check the current rules (for example [Practice Direction 27A of the Family Procedure Rules](https://www.justice.gov.uk/courts/procedure-rules/family/practice_directions/pd_part_27a)) and any directions in your own case.
+
+## Your documents never leave your computer
+
+- **Local only.** Files are stored in the app's local database (IndexedDB) on your own machine.
+- **No uploads, no server, no account.** The app has no backend and makes no network requests with your data.
+- **No telemetry or analytics.**
+- **Works offline.** PDF rendering and OCR (text recognition for scanned documents) run on your machine. The OCR language data is bundled with the app.
 
 ## Features
 
-### Document Management
-- **Smart Organization**: Auto-assigns court documents (applications, orders, judgments, transcripts) and expert reports
-- **Consolidated Court Section**: Applications, Orders & Judgments in one organized section
-- **Two-Vault System**: Separate workspaces for Child and Financial matters
-- **Folder Import**: Import pre-organized folders with automatic section mapping
-- **"Take a Closer Look"**: PDF preview when filename isn't clear
-- **Duplicate Detection**: Prevents duplicate files with smart notifications
+- **Document vault** – sorts documents into bundle sections: Preliminary Documents; Applications, Orders & Judgments; Statements and Affidavits; Care Plans; Experts' Reports; Other Documents
+- **Separate vaults** for children and financial proceedings (the financial vault adds Financial Disclosure, Property Valuations and Correspondence)
+- **Automatic details** – reads case numbers (e.g. `AB12C34567`), form types (C100, FL401), dates and judge titles (HHJ, DJ, DDJ) from file names and PDF text
+- **OCR** for scanned documents, producing searchable PDFs
+- **Page selection** – include only the pages you need
+- **Bundle builder** – cover page, hyperlinked index, section dividers, continuous page numbering and PDF bookmarks
+- **Folder import** – import an existing folder of documents with automatic section mapping
 
-### PDF Processing
-- **Text Extraction**: Automated extraction via pdf-parse in Electron
-- **UK Court Patterns**: Recognizes case numbers (AB12C34567), forms (C100, FL401), judge titles (HHJ, DJ)
-- **Auto-Population**: Fills court references, judge names, document types
-- **OCR Support**: Manual OCR for scanned documents with confidence scoring
+## Try it with sample documents
 
-### Document Vault
-- **Simplified Metadata**: Court reference, date, judge name (when applicable), and details field
-- **Smart Fields**: Judge name only shows for orders/judgments/transcripts, not applications
-- **Status Indicators**: Shows page selections (📄 5/10), metadata (✓), OCR status (🔍)
-- **Page Selection**: Carousel interface for selecting specific pages
-- **Advanced Search**: Filter by section, search across metadata
-- **Quick Actions**: Edit, delete, and manage documents
-- **OCR ALL**: Batch OCR processing for all documents with progress tracking
+The [`samples/`](samples/) folder contains **fictional** documents (a C100 summary, witness statement, position statement, order, Cafcass letter and chronology) for a made-up case, `AB12C34567`. Every name, court and address in them is invented. Import the folder to try the app without using real papers.
 
-### Bundle Builder
-- **Bundle Creation**: Create court bundles with case details (name, reference, hearing date, court)
-- **Database Storage**: Persistent bundle storage with IndexedDB
-- **Status Tracking**: Draft/completed status with document counts
-- **Navigation**: Reorganized as Home → Documents → Bundles → Case Settings → [gap] → Import Folders
+To regenerate them: `node scripts/generate-samples.js`
 
-## Installation
+## Install
 
-### For Users
-1. Download installer from [Releases](../../releases)
-2. Run `My Case Files Setup X.X.X.exe`
-3. Launch from desktop shortcut
+### Windows
+Download the latest installer from [Releases](../../releases) and run `My Case Files Setup X.X.X.exe`. The installer is not yet code-signed, so Windows SmartScreen may warn you: click **More info → Run anyway**.
 
-### For Developers
+### macOS / Linux
+There are no packaged builds yet. Run from source (below).
+
+## Run from source
+
+Requirements: Node.js 18+. For OCR on Linux or macOS, also install Poppler (`sudo apt install poppler-utils` or `brew install poppler`); Windows binaries are included.
+
 ```bash
-git clone <repository-url>
+git clone https://github.com/madpirate78/mycasefiles.git
 cd mycasefiles
 npm install
-npm run dev-electron  # Recommended - builds and launches
+npm run dev-electron   # builds the React app and launches Electron
 ```
 
-## Development
-
-### Prerequisites
-- Node.js v18+
-- Windows/macOS/Linux desktop
-- GitHub CLI (optional, for build triggers)
-
-### Quick Start
-```bash
-npm install
-npm run dev-electron  # Fresh build + Electron launch
-```
+Use `npm run dev-electron`, not `npm start`: PDF text extraction and OCR run in Electron's main process and won't work in a plain browser.
 
 ### Commands
-- `npm run dev-electron` - Build and launch (recommended)
-- `npm run electron` - Quick launch with existing build
-- `npm start` - React dev server (limited - no PDF/OCR features)
-- `npm run dist` - Create Windows installer
-- `npm run version-patch` - Create release (0.1.0 → 0.1.1)
-- `npm run trigger-build` - Trigger GitHub Actions build
 
-### Linux/WSL Setup
+| Command | What it does |
+|---|---|
+| `npm run dev-electron` | Build and launch the desktop app |
+| `npm run electron` | Launch using the existing build |
+| `npm run build` | Build the React app |
+| `npm run dist` | Build a Windows installer locally |
+| `npm run version-patch` | Tag a release (GitHub Actions builds and publishes it) |
+
+### Linux / WSL dependencies for Electron
+
 ```bash
 sudo apt install -y libnss3-dev libatk-bridge2.0-dev libdrm2 libxkbcommon-dev libxcomposite-dev libxdamage-dev libxrandr-dev libgbm-dev libxss-dev libasound2-dev
 ```
 
-## Architecture
+## Built with
 
-### Core Tech
-- **Electron**: Desktop wrapper with Node.js capabilities
-- **React + TypeScript**: Modern UI with type safety
-- **IPC Communication**: Secure main/renderer process bridge
-- **IndexedDB**: Local document storage
-- **pdf-parse**: PDF text extraction (Node.js only)
-- **Tesseract.js**: OCR for scanned documents
+- **Electron** – desktop shell; PDF and OCR work runs in the main process and reaches the UI through a secure `contextBridge` IPC layer
+- **React + TypeScript** – user interface
+- **IndexedDB** – local storage
+- **pdf-parse**, **PDF.js**, **pdf-lib** – text extraction, rendering and bundle generation
+- **Tesseract.js** and **Poppler** – OCR for scanned documents
 
-### Key Files
 ```
 src/
-├── components/         # React UI components
-├── services/          # Business logic and storage
-├── documentParser/    # PDF parsing and UK court patterns
+├── components/            # React UI (documents, bundles, layout)
+├── services/
+│   ├── documentParser/    # UK court document parsing
+│   └── indexedDBService.ts
+└── constants/sectionConfig.ts   # bundle sections and metadata fields
 public/
-├── electron.js        # Electron main process
-├── preload.js         # IPC security bridge
+├── electron.js            # Electron main process
+├── electron/              # PDF, OCR and bundle services
+└── preload.js             # IPC bridge
+resources/tessdata/        # bundled OCR language data
+samples/                   # fictional test documents
 ```
 
-## Troubleshooting
+## Roadmap
 
-### Common Issues
-- **"Cannot find module"**: Ensure runtime deps are in `dependencies`, not `devDependencies`
-- **Windows SmartScreen**: Click "More info" → "Run anyway"
-- **PDF not working**: Use `npm run dev-electron`, not `npm start`
-- **GitHub Actions 403**: Add `permissions: contents: write` to workflow
-
-## Current Development
-**Next Task**: Implement bundle edit dialogue for modifying existing bundles
+See [ROADMAP.md](ROADMAP.md).
 
 ## Contributing
-1. Follow TypeScript patterns and ESLint rules
-2. Test with real UK court documents
-3. Update docs for new patterns
-4. Keep PDF.js assets local for offline use
 
-## License
-Proprietary software for legal document management.
+Issues and pull requests are welcome. **Never attach or commit real court documents.** Family proceedings are confidential, so use the fictional files in `samples/` (or add new fictional ones) to reproduce problems. The repository's `.gitignore` blocks PDFs outside `samples/` for this reason.
 
----
-**Built for UK family court document organization with intelligent PDF parsing and OCR.**
+## Licence
+
+[MIT](LICENSE)

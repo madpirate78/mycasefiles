@@ -3,6 +3,7 @@
   "version": "0.1.15",
   "description": "Desktop legal document management system for self-represented litigants",
   "author": "MyCaseFiles",
+  "license": "MIT",
   "private": true,
   "homepage": "./",
   "dependencies": {
@@ -83,6 +84,15 @@
       "node_modules/**/*",
       "!node_modules/.cache/**/*",
       "!node_modules/fsevents/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/tessdata",
+        "to": "tessdata",
+        "filter": [
+          "*.traineddata"
+        ]
+      }
     ],
     "publish": {
       "provider": "github",

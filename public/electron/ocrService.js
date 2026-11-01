@@ -17,6 +17,27 @@ const { PDFDocument, rgb, StandardFonts } = require('pdf-lib');
 
 let resourceMonitor;
 
+// ─── Offline language data ───────────────────────────────────────
+
+/**
+ * Tesseract options that load eng.traineddata from disk instead of
+ * downloading it from a CDN, so OCR works fully offline.
+ * Packaged: <resources>/tessdata (via electron-builder extraResources).
+ * Development: <repo>/resources/tessdata.
+ */
+function getTesseractOptions(extra = {}) {
+  const packagedDir = process.resourcesPath ? path.join(process.resourcesPath, 'tessdata') : null;
+  const devDir = path.join(__dirname, '..', '..', 'resources', 'tessdata');
+  const langPath = packagedDir && fs.existsSync(path.join(packagedDir, 'eng.traineddata')) ? packagedDir : devDir;
+
+  return {
+    langPath,
+    gzip: false,          // file is stored uncompressed
+    cacheMethod: 'none',  // never write a cached copy to the working directory
+    ...extra,
+  };
+}
+
 // ─── Core OCR pipeline ───────────────────────────────────────────
 
 /** Perform OCR on PDF pages (max 3 pages for performance). */
@@ -102,10 +123,10 @@ async function performOCROnPDF(pdfBuffer) {
         let fallbackToSingleColumn = false;
 
         try {
-          worker = await Tesseract.createWorker('eng', 1, {
+          worker = await Tesseract.createWorker('eng', 1, getTesseractOptions({
             legacyCore: true,
             legacyLang: true
-          });
+          }));
 
           await worker.setParameters({
             tessedit_pageseg_mode: 1,
@@ -115,7 +136,7 @@ async function performOCROnPDF(pdfBuffer) {
           console.log(`⚠️ Page ${i + 1}: Legacy worker failed, falling back to PSM_SINGLE_COLUMN`);
           fallbackToSingleColumn = true;
 
-          worker = await Tesseract.createWorker('eng');
+          worker = await Tesseract.createWorker('eng', 1, getTesseractOptions());
           await worker.setParameters({
             tessedit_pageseg_mode: 3,
             user_defined_dpi: options.resolutionXYAxis || 300
