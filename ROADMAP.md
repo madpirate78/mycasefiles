@@ -34,4 +34,15 @@ There are currently no automated tests.
 - [ ] **User guide** – step-by-step for a first-time litigant: importing papers, checking details, building and checking a bundle, with screenshots using the fictional samples. (~2h)
 - [ ] **Privacy note in the app** – explain on first launch that everything stays on the user's computer, and how to back up or delete their data. (~1h)
 
-**Total: about 28 hours.**
+## 6. Bundle templates for other courts (~5 hours)
+
+Bundle sections are already defined in configuration (`src/constants/sectionConfig.ts`), so other courts can be supported without changing the bundle engine.
+
+- [ ] **Template selection** – choose a bundle template when creating a vault or bundle, instead of the fixed child/finance layouts. (~2h)
+- [ ] **Civil courts** – trial bundle sections following CPR Practice Direction 39A. (~1h)
+- [ ] **Employment Tribunal** – a hearing bundle layout (pleadings, orders, witness statements, documents). (~1h)
+- [ ] **Court of Protection** – sections following Practice Direction 13B. (~1h)
+
+Templates should be checked against the current rules for each court before release.
+
+**Total: about 33 hours.**
